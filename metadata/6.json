@@ -1,0 +1,48 @@
+{
+  "name": "Realmkin Jester — Lime Carnival",
+  "symbol": "TRK",
+  "description": "Realmkin is an NFT collection on Solana where holders earn $MKIN weekly, battle in Void Card Games, and grow stronger through fusion mechanics & seasonal rewards. By holding a Realmkin, you don’t just mint an NFT, you join an ecosystem-driven community that builds long-term value together.",
+  "seller_fee_basis_points": 1000,
+  "image": "https://bafybeie7ne2t3wtfie6n5zrtglmsszw4xdhlg542xs5vu5ykxkk4xfshxi.ipfs.w3s.link/6.png",
+  "attributes": [
+    {
+      "trait_type": "Class",
+      "value": "Jester"
+    },
+    {
+      "trait_type": "Background",
+      "value": "Golden Stage Curtains"
+    },
+    {
+      "trait_type": "Body",
+      "value": "Agile Entertainer"
+    },
+    {
+      "trait_type": "Cloth",
+      "value": "Court Jester Suit"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Melancholy Red Gaze"
+    },
+    {
+      "trait_type": "Rarity Rank",
+      "value": "—"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "https://bafybeie7ne2t3wtfie6n5zrtglmsszw4xdhlg542xs5vu5ykxkk4xfshxi.ipfs.w3s.link/6.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "F1p6dNLSSTHi4QkUkRVXZw8QurZJKUDcvVBjfF683nU",
+        "share": 100
+      }
+    ]
+  }
+}

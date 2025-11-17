@@ -1,0 +1,41 @@
+{
+  "name": "node-express-api",
+  "description": "Simple api sample in Node",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node index.js",
+    "start": "node index.js",
+    "migrate-wallets": "node migrate_wallet_addresses.js",
+    "fix-wallets": "node advanced_wallet_fix.js",
+    "fix-wallets-web3": "node web3_context_wallet_fix.js",
+    "identify-invalid-wallets": "node identify_invalid_wallets.js",
+    "test-firebase": "node test_firebase_connection.js"
+  },
+  "author": "Google LLC",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@discordjs/rest": "^2.5.1",
+    "@solana/web3.js": "^1.98.4",
+    "@supabase/supabase-js": "^2.55.0",
+    "axios": "^1.11.0",
+    "bs58": "^6.0.0",
+    "cors": "^2.8.5",
+    "discord-api-types": "^0.38.20",
+    "discord.js": "^14.21.0",
+    "dotenv": "^17.2.1",
+    "express": "^4.21.2",
+    "firebase-admin": "^12.5.0",
+    "ioredis": "^5.7.0",
+    "node-fetch": "^3.3.2",
+    "postgres": "^3.4.7",
+    "redis": "^5.8.2",
+    "tweetnacl": "^1.0.3"
+  },
+  "devDependencies": {
+    "@flydotio/dockerfile": "^0.7.10",
+    "nodemon": "^3.0.1"
+  }
+}
