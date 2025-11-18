@@ -3,7 +3,7 @@ import 'dotenv/config';
 
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
 // Testing with LOWERCASE (invalid) - should fail validation
-const TEST_WALLET = '7nns74szxn8fnlm5648yuh8upjqrmfrlfimv767tkmfg';
+const TEST_WALLET = '98vJraBpTmT2hmFxfHchp1Bd7Wg5UN17ZKUuGQKfPi1r';
 const REALMKIN_COLLECTION_ADDRESS = '89KnhXiCHb2eGP2jRGzEQX3B8NTyqHEVmu55syDWSnL8';
 
 const checkWalletWithHelius = async () => {

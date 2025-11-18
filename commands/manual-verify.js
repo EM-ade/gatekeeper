@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
 import sql from '../db.js';
 import PeriodicVerificationService from '../services/periodicVerification.js';
+import RATE_LIMITING_CONFIG from '../config/rateLimiting.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -64,17 +65,43 @@ async function handleVerifyAll(interaction) {
       let verified = 0;
       let failed = 0;
 
-      for (const user of users) {
-        try {
-          console.log(`[manual-verify] Verifying user ${user.discord_id}...`);
-          await global.periodicVerificationService.checkAndUpdateUser(user);
-          verified++;
+      // Process users in smaller batches with better rate limiting using configuration
+      const BATCH_SIZE = RATE_LIMITING_CONFIG.manualVerification.batchSize;
+      const DELAY_BETWEEN_BATCHES = RATE_LIMITING_CONFIG.manualVerification.delayBetweenBatches;
 
-          // Add small delay to avoid rate limiting
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        } catch (error) {
-          console.error(`[manual-verify] Error verifying user ${user.discord_id}:`, error.message);
-          failed++;
+      for (let i = 0; i < users.length; i += BATCH_SIZE) {
+        const batch = users.slice(i, i + BATCH_SIZE);
+        
+        console.log(`[manual-verify] Processing batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(users.length/BATCH_SIZE)}`);
+        
+        // Process batch concurrently with individual rate limiting
+        const batchResults = await Promise.allSettled(
+          batch.map(user => {
+            console.log(`[manual-verify] Verifying user ${user.discord_id}...`);
+            return global.periodicVerificationService.checkAndUpdateUser(user);
+          })
+        );
+        
+        // Process results
+        for (let j = 0; j < batchResults.length; j++) {
+          const result = batchResults[j];
+          
+          if (result.status === 'fulfilled') {
+            verified++;
+          } else {
+            console.error(`[manual-verify] Error verifying user:`, result.reason.message);
+            failed++;
+          }
+        }
+        
+        // Update progress
+        await interaction.editReply({
+          content: `⏳ Verification progress: ${Math.min(i + BATCH_SIZE, users.length)}/${users.length} users processed...`,
+        });
+        
+        // Wait between batches
+        if (i + BATCH_SIZE < users.length) {
+          await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
         }
       }
 

@@ -1,6 +1,7 @@
 
 import fetch from 'node-fetch';
 import { COLLECTIONS } from '../config/collections.js';
+import RATE_LIMITING_CONFIG from '../config/rateLimiting.js';
 
 // Environment Variables
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
@@ -280,28 +281,107 @@ export const getRealmkinNftsByOwner = async (walletAddress) => {
     return combined.map(({ label, value }) => ({ label, value }));
 };
 
+// Rate limiting and batching for Magic Eden API
+class MagicEdenRateLimiter {
+    constructor() {
+        this.queue = [];
+        this.processing = false;
+        this.maxRequestsPerSecond = RATE_LIMITING_CONFIG.magicEden.maxRequestsPerSecond;
+        this.batchSize = RATE_LIMITING_CONFIG.magicEden.batchSize;
+        this.cache = new Map();
+        this.cacheTTL = RATE_LIMITING_CONFIG.magicEden.cacheTTL;
+        this.retryDelay = RATE_LIMITING_CONFIG.magicEden.retryDelay;
+    }
+
+    async getNftMetadata(mintAddress) {
+        // Check cache first
+        const cached = this.cache.get(mintAddress);
+        if (cached && Date.now() - cached.timestamp < this.cacheTTL) {
+            return cached.data;
+        }
+
+        // Add to queue and wait for processing
+        return new Promise((resolve, reject) => {
+            this.queue.push({ mintAddress, resolve, reject });
+            if (!this.processing) {
+                this.processQueue();
+            }
+        });
+    }
+
+    async processQueue() {
+        if (this.processing) return;
+        this.processing = true;
+
+        while (this.queue.length > 0) {
+            const batch = this.queue.splice(0, this.batchSize);
+            
+            try {
+                // Process batch concurrently with rate limiting
+                const results = await Promise.all(
+                    batch.map(item => this.fetchSingleNftMetadata(item.mintAddress))
+                );
+
+                // Resolve all promises in the batch
+                batch.forEach((item, index) => {
+                    if (results[index]) {
+                        // Cache the result
+                        this.cache.set(item.mintAddress, {
+                            data: results[index],
+                            timestamp: Date.now()
+                        });
+                        item.resolve(results[index]);
+                    } else {
+                        item.reject(new Error(`Failed to fetch metadata for ${item.mintAddress}`));
+                    }
+                });
+
+                // Rate limiting delay
+                await new Promise(resolve => setTimeout(resolve, 1000 / this.maxRequestsPerSecond));
+            } catch (error) {
+                // If batch fails, reject all items
+                batch.forEach(item => item.reject(error));
+            }
+        }
+
+        this.processing = false;
+    }
+
+    async fetchSingleNftMetadata(mintAddress) {
+        const url = `https://api-mainnet.magiceden.dev/v2/tokens/${mintAddress}`;
+        const options = {
+            method: 'GET',
+            headers: { accept: 'application/json' }
+        };
+
+        try {
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                if (response.status === 429) {
+                    // Rate limited - wait longer
+                    await new Promise(resolve => setTimeout(resolve, this.retryDelay));
+                    return this.fetchSingleNftMetadata(mintAddress); // Retry
+                }
+                throw new Error(`Magic Eden API error: ${response.statusText}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error(`Error fetching metadata for ${mintAddress} from Magic Eden:`, error);
+            return null;
+        }
+    }
+}
+
+// Create a singleton instance
+const magicEdenRateLimiter = new MagicEdenRateLimiter();
+
 /**
  * Fetches NFT metadata from Magic Eden including attributes
  * @param {string} mintAddress - The NFT mint address
  * @returns {Promise<Object>} NFT metadata with attributes
  */
 export const getNftMetadataFromMagicEden = async (mintAddress) => {
-    const url = `https://api-mainnet.magiceden.dev/v2/tokens/${mintAddress}`;
-    const options = {
-        method: 'GET',
-        headers: { accept: 'application/json' }
-    };
-
-    try {
-        const response = await fetch(url, options);
-        if (!response.ok) {
-            throw new Error(`Magic Eden API error: ${response.statusText}`);
-        }
-        return await response.json();
-    } catch (error) {
-        console.error(`Error fetching metadata for ${mintAddress} from Magic Eden:`, error);
-        return null;
-    }
+    return await magicEdenRateLimiter.getNftMetadata(mintAddress);
 };
 
 /**

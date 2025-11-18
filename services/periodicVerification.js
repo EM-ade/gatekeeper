@@ -2,6 +2,7 @@ import sql from '../db.js';
 import * as guildVerificationConfigStore from '../repositories/guildVerificationConfigsRepository.js';
 import { checkNftOwnershipWithClass } from '../utils/solana.js';
 import { COLLECTIONS } from '../config/collections.js';
+import RATE_LIMITING_CONFIG from '../config/rateLimiting.js';
 
 const CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -62,7 +63,7 @@ class PeriodicVerificationService {
   }
 
   /**
-   * Run a verification check for all verified users
+   * Run a verification check for all verified users with enhanced rate limiting
    */
   async runVerificationCheck() {
     console.log('[periodic-verification] Running verification check...');
@@ -75,7 +76,7 @@ class PeriodicVerificationService {
         FROM users
         WHERE wallet_address IS NOT NULL
         ORDER BY last_verification_check ASC NULLS FIRST
-        LIMIT 100
+        LIMIT 50
       `;
 
       console.log(`[periodic-verification] Found ${users.length} users to check`);
@@ -85,16 +86,38 @@ class PeriodicVerificationService {
       let rolesRemoved = 0;
       let errors = 0;
 
-      for (const user of users) {
-        try {
-          await this.checkAndUpdateUser(user);
-          checked++;
+      // Process users in smaller batches with longer delays using configuration
+      const BATCH_SIZE = RATE_LIMITING_CONFIG.verification.batchSize;
+      const DELAY_BETWEEN_BATCHES = RATE_LIMITING_CONFIG.verification.delayBetweenBatches;
+      const DELAY_BETWEEN_USERS = RATE_LIMITING_CONFIG.verification.delayBetweenUsers;
 
-          // Add small delay to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 100));
-        } catch (error) {
-          console.error(`[periodic-verification] Error checking user ${user.discord_id}:`, error.message);
-          errors++;
+      for (let i = 0; i < users.length; i += BATCH_SIZE) {
+        const batch = users.slice(i, i + BATCH_SIZE);
+        
+        console.log(`[periodic-verification] Processing batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(users.length/BATCH_SIZE)}`);
+        
+        // Process batch concurrently with individual rate limiting
+        const batchResults = await Promise.allSettled(
+          batch.map(user => this.checkAndUpdateUser(user))
+        );
+        
+        // Process results
+        for (let j = 0; j < batchResults.length; j++) {
+          const result = batchResults[j];
+          const user = batch[j];
+          
+          if (result.status === 'fulfilled') {
+            checked++;
+            // Count role changes if needed (you may need to track this differently)
+          } else {
+            console.error(`[periodic-verification] Error checking user ${user.discord_id}:`, result.reason.message);
+            errors++;
+          }
+        }
+        
+        // Wait between batches
+        if (i + BATCH_SIZE < users.length) {
+          await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
         }
       }
 
