@@ -16,10 +16,10 @@ export const RATE_LIMITING_CONFIG = {
     
     // Verification service rate limiting
     verification: {
-        batchSize: 5, // Users per batch
-        delayBetweenBatches: 2000, // 2 seconds between batches
-        delayBetweenUsers: 500, // 500ms between users in same batch
-        maxUsersPerRun: 50, // Maximum users to process in one run
+        batchSize: 2, // Users per batch (reduced to avoid rate limits)
+        delayBetweenBatches: 5000, // 5 seconds between batches (increased)
+        delayBetweenUsers: 2000, // 2 seconds between users in same batch
+        maxUsersPerRun: 20, // Maximum users to process in one run (reduced)
     },
     
     // Manual verification rate limiting
