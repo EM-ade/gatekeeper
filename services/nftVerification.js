@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { PublicKey } from '@solana/web3.js';
+import { heliusRateLimiter } from '../utils/rateLimiter.js';
 
 class NFTVerificationService {
   constructor(client = null) {

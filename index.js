@@ -21,6 +21,8 @@ import {
 import * as guildVerificationConfigStore from "./repositories/guildVerificationConfigsRepository.js";
 import PeriodicVerificationService from "./services/periodicVerification.js";
 import { PublicKey } from '@solana/web3.js';
+import { heliusRateLimiter } from "./utils/rateLimiter.js";
+import withdrawalLogger from "./services/withdrawalLogger.js";
 
 // Check for essential environment variables
 if (!process.env.DISCORD_BOT_TOKEN) {
@@ -230,13 +232,23 @@ if (!admin.apps.length) {
     }
 
     if (svcJson) {
-      admin.initializeApp({ credential: admin.credential.cert(svcJson) });
+      const initConfig = { 
+        credential: admin.credential.cert(svcJson)
+      };
+      
+      // Add databaseURL if available for Realtime Database
+      if (process.env.FIREBASE_DATABASE_URL) {
+        initConfig.databaseURL = process.env.FIREBASE_DATABASE_URL;
+      }
+      
+      admin.initializeApp(initConfig);
+      console.log("Firebase Admin initialized with project:", svcJson.project_id);
     } else {
       admin.initializeApp({
         credential: admin.credential.applicationDefault(),
       });
+      console.log("Firebase Admin initialized with application default credentials");
     }
-    console.log("Firebase Admin initialized");
   } catch (err) {
     console.warn(
       "Firebase Admin failed to initialize (API auth disabled):",
@@ -742,13 +754,15 @@ app.post("/api/transfer", verifyFirebase, async (req, res) => {
       return res.status(400).json({ error: "refId required" });
     }
 
-    const senderUserId = await ensureUserForFirebaseUid(req.firebaseUid);
-
-    // Resolve recipient via Firestore wallets mapping to Firebase UID
+    // Check Firebase Admin is initialized
     if (!admin.apps.length || !admin.firestore) {
       return res.status(503).json({ error: "Auth not configured" });
     }
+
     const fs = admin.firestore();
+    const senderUid = req.firebaseUid;
+
+    // Resolve recipient via Firestore wallets mapping to Firebase UID
     const walletDoc = await fs
       .collection("wallets")
       .doc(String(recipientWalletAddress).toLowerCase())
@@ -756,49 +770,481 @@ app.post("/api/transfer", verifyFirebase, async (req, res) => {
     if (!walletDoc.exists) {
       return res.status(404).json({ error: "Recipient wallet not found" });
     }
-    const mappedUid = (walletDoc.data() || {}).uid;
-    if (!mappedUid || typeof mappedUid !== "string") {
+    const recipientUid = (walletDoc.data() || {}).uid;
+    if (!recipientUid || typeof recipientUid !== "string") {
       return res
         .status(404)
         .json({ error: "Recipient user not found for wallet" });
     }
-    const recipientUserId = await ensureUserForFirebaseUid(mappedUid);
 
-    if (recipientUserId === senderUserId) {
+    if (recipientUid === senderUid) {
       return res.status(400).json({ error: "Cannot transfer to yourself" });
     }
 
-    // Perform atomic debit/credit using ledger function
-    try {
-      await sql.begin(async (trx) => {
-        await trx`
-                    select public.apply_ledger_entry(${senderUserId}::uuid, ${-amount}::bigint, ${"transfer:sender"}, ${refId + ":sender"}) as balance
-                `;
-        await trx`
-                    select public.apply_ledger_entry(${recipientUserId}::uuid, ${amount}::bigint, ${"transfer:recipient"}, ${refId + ":recipient"}) as balance
-                `;
-      });
-    } catch (e) {
-      const msg = String(e.message || "").toLowerCase();
-      if (msg.includes("insufficient"))
-        return res.status(400).json({ error: "Insufficient funds" });
-      if (msg.includes("unique")) {
-        // Idempotent OK; fall through to return current sender balance
-      } else {
-        throw e;
-      }
+    // Check for duplicate refId
+    const transferHistoryRef = fs.collection("transferHistory").doc(refId);
+    const existingTransfer = await transferHistoryRef.get();
+    if (existingTransfer.exists) {
+      console.log(`[Transfer] Duplicate refId detected: ${refId}`);
+      // Return current sender balance (idempotent)
+      const senderRewards = await fs.collection("userRewards").doc(senderUid).get();
+      const balance = senderRewards.exists ? (senderRewards.data().totalRealmkin || 0) : 0;
+      return res.json({ balance });
     }
 
-    // Return current sender balance after transfer
-    const balRows =
-      await sql`select balance from user_balances where user_id = ${senderUserId}`;
-    const balance = balRows[0]?.balance ?? 0n;
-    res.json({ balance: Number(balance) });
+    // Perform atomic debit/credit using Firestore transaction
+    let newSenderBalance = 0;
+    try {
+      await fs.runTransaction(async (transaction) => {
+        const senderRef = fs.collection("userRewards").doc(senderUid);
+        const recipientRef = fs.collection("userRewards").doc(recipientUid);
+
+        const senderDoc = await transaction.get(senderRef);
+        const recipientDoc = await transaction.get(recipientRef);
+
+        if (!senderDoc.exists) {
+          throw new Error("Sender rewards not found");
+        }
+
+        const senderBalance = senderDoc.data().totalRealmkin || 0;
+        if (amount > senderBalance) {
+          throw new Error("Insufficient funds");
+        }
+
+        const recipientBalance = recipientDoc.exists ? (recipientDoc.data().totalRealmkin || 0) : 0;
+
+        newSenderBalance = senderBalance - amount;
+        const newRecipientBalance = recipientBalance + amount;
+
+        // Update sender
+        transaction.update(senderRef, {
+          totalRealmkin: newSenderBalance,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        // Update or create recipient
+        if (recipientDoc.exists) {
+          transaction.update(recipientRef, {
+            totalRealmkin: newRecipientBalance,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        } else {
+          transaction.set(recipientRef, {
+            totalRealmkin: newRecipientBalance,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
+
+        // Record transfer history for idempotency
+        transaction.set(transferHistoryRef, {
+          senderUid,
+          recipientUid,
+          recipientWalletAddress,
+          amount,
+          refId,
+          timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      });
+
+      console.log(`[Transfer] Success: ${amount} MKIN from ${senderUid} to ${recipientUid}`);
+      res.json({ balance: newSenderBalance });
+    } catch (err) {
+      const msg = String(err.message || "").toLowerCase();
+      if (msg.includes("insufficient")) {
+        return res.status(400).json({ error: "Insufficient funds" });
+      }
+      throw err;
+    }
   } catch (err) {
     console.error("POST /api/transfer error:", err);
     res.status(500).json({ error: "Internal error" });
   }
 });
+
+// ============================================================================
+// Withdrawal Endpoints (Fee-based MKIN claiming to blockchain)
+// ============================================================================
+
+// POST /api/withdraw/initiate - Create fee transaction for withdrawal
+app.post("/api/withdraw/initiate", verifyFirebase, async (req, res) => {
+  try {
+    const { amount, walletAddress } = req.body;
+    const userId = req.firebaseUid;
+
+    console.log(`[Withdraw Initiate] User: ${userId}, Amount: ${amount}, Wallet: ${walletAddress}`);
+
+    // Log withdrawal initiation (before validation to track all attempts)
+    const logId = await withdrawalLogger.logInitiate(
+      userId,
+      walletAddress,
+      amount,
+      { feeAmountSol: 0, feeAmountUsd: 0.50, solPrice: 0 }, // Will update later
+      req.ip,
+      req.headers['user-agent']
+    );
+
+    // 1. Validate input
+    if (!amount || !walletAddress) {
+      return res.status(400).json({ error: "Missing amount or walletAddress" });
+    }
+
+    if (!Number.isInteger(amount) || amount <= 0) {
+      return res.status(400).json({ error: "Invalid amount - must be positive integer" });
+    }
+
+    // 2. Check minimum withdrawal amount (1,000 MKIN)
+    const MIN_WITHDRAWAL = 1000;
+    if (amount < MIN_WITHDRAWAL) {
+      return res.status(400).json({
+        error: `Minimum withdrawal is ${MIN_WITHDRAWAL} MKIN`,
+        minimum: MIN_WITHDRAWAL,
+        requested: amount
+      });
+    }
+
+    // 3. Check Firebase balance
+    if (!admin.apps.length || !admin.firestore) {
+      return res.status(503).json({ error: "Auth not configured" });
+    }
+    const fs = admin.firestore();
+    const rewardsDoc = await fs.collection("userRewards").doc(userId).get();
+
+    if (!rewardsDoc.exists) {
+      return res.status(404).json({ error: "User rewards not found" });
+    }
+
+    const totalRealmkin = rewardsDoc.data()?.totalRealmkin || 0;
+
+    if (amount > totalRealmkin) {
+      return res.status(400).json({
+        error: "Insufficient balance",
+        available: totalRealmkin,
+        requested: amount
+      });
+    }
+
+    // 4. Get SOL price and calculate fee
+    const { getSolPriceUSD } = await import('./utils/solPrice.js');
+    const solPrice = await getSolPriceUSD();
+    const feeInUsd = 0.50;
+    const feeInSol = feeInUsd / solPrice;
+
+    console.log(`[Withdraw Initiate] Fee: $${feeInUsd} = ${feeInSol.toFixed(6)} SOL (SOL price: $${solPrice})`);
+
+    // Update log with fee details
+    if (logId) {
+      await sql`
+        UPDATE withdrawal_transactions 
+        SET fee_amount_sol = ${feeInSol}, 
+            sol_price_usd = ${solPrice},
+            fee_amount_usd = ${feeInUsd}
+        WHERE id = ${logId}
+      `;
+    }
+
+    // 5. Create SOL transfer transaction (user -> treasury)
+    const { Connection, PublicKey, Transaction, SystemProgram } = await import('@solana/web3.js');
+    const treasuryPubkey = new PublicKey(process.env.TREASURY_WALLET || '8w1dD5Von2GBTa9cVASeC2A9F3gRrCqHA7QPds5pfXsM');
+    const userPubkey = new PublicKey(walletAddress);
+    const solanaRpcUrl = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
+
+    const connection = new Connection(solanaRpcUrl);
+
+    const transaction = new Transaction().add(
+      SystemProgram.transfer({
+        fromPubkey: userPubkey,
+        toPubkey: treasuryPubkey,
+        lamports: Math.floor(feeInSol * 1e9), // SOL to lamports
+      })
+    );
+
+    // 6. Set recent blockhash
+    const { blockhash } = await connection.getLatestBlockhash();
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = userPubkey;
+
+    // 7. Serialize transaction for client to sign
+    const serializedTx = transaction.serialize({
+      requireAllSignatures: false,
+      verifySignatures: false
+    }).toString('base64');
+
+    console.log(`[Withdraw Initiate] Transaction created, waiting for user signature`);
+
+    res.json({
+      success: true,
+      feeTransaction: serializedTx,
+      feeAmountSol: feeInSol,
+      feeAmountUsd: feeInUsd,
+      solPrice: solPrice,
+    });
+
+  } catch (err) {
+    console.error("[Withdraw Initiate] Error:", err);
+    res.status(500).json({ error: "Failed to initiate withdrawal", details: err.message });
+  }
+});
+
+// POST /api/withdraw/complete - Verify fee and send MKIN tokens
+app.post("/api/withdraw/complete", verifyFirebase, async (req, res) => {
+  try {
+    const { feeSignature, amount, walletAddress } = req.body;
+    const userId = req.firebaseUid;
+
+    console.log(`[Withdraw Complete] User: ${userId}, Fee TX: ${feeSignature}`);
+
+    // 1. Validate input
+    if (!feeSignature || !amount || !walletAddress) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    if (!Number.isInteger(amount) || amount <= 0) {
+      return res.status(400).json({ error: "Invalid amount" });
+    }
+
+    // Check minimum withdrawal
+    const MIN_WITHDRAWAL = 1000;
+    if (amount < MIN_WITHDRAWAL) {
+      return res.status(400).json({
+        error: `Minimum withdrawal is ${MIN_WITHDRAWAL} MKIN`,
+      });
+    }
+
+    if (!admin.apps.length || !admin.firestore) {
+      return res.status(503).json({ error: "Auth not configured" });
+    }
+    const fs = admin.firestore();
+
+    // 2. Check if fee signature already used
+    const usedFeesRef = fs.collection("usedWithdrawalFees").doc(feeSignature);
+    const usedFeeDoc = await usedFeesRef.get();
+
+    if (usedFeeDoc.exists) {
+      console.warn(`[Withdraw Complete] Duplicate fee signature: ${feeSignature}`);
+      return res.status(400).json({ error: "Fee signature already used" });
+    }
+
+    // 3. Verify fee transaction on-chain
+    const { Connection } = await import('@solana/web3.js');
+    // Use Helius for better rate limits (paid tier)
+    const heliusApiKey = process.env.HELIUS_API_KEY;
+    const solanaRpcUrl = heliusApiKey 
+      ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
+      : "https://api.mainnet-beta.solana.com";
+    const connection = new Connection(solanaRpcUrl);
+
+    let txInfo;
+    let attempts = 0;
+    const maxAttempts = 5;
+    
+    while (attempts < maxAttempts) {
+      try {
+        // Use rate limiter for transaction fetching
+        txInfo = await heliusRateLimiter.execute(
+          () => connection.getTransaction(feeSignature, {
+            commitment: 'confirmed',
+            maxSupportedTransactionVersion: 0
+          }),
+          `withdrawal-verify-${userId.substring(0, 8)}`
+        );
+        
+        if (txInfo) break; // Transaction found
+        
+        attempts++;
+        console.log(`[Withdraw Complete] Attempt ${attempts}/${maxAttempts}: Transaction not found yet, retrying...`);
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+      } catch (err) {
+        console.error(`[Withdraw Complete] Failed to fetch transaction (attempt ${attempts + 1}): ${err.message}`);
+        attempts++;
+        if (attempts >= maxAttempts) {
+          return res.status(400).json({ error: "Fee transaction not found or not confirmed yet. Please wait and try again." });
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+
+    if (!txInfo) {
+      return res.status(400).json({ error: "Fee transaction not found after multiple attempts" });
+    }
+
+    if (txInfo.meta?.err) {
+      return res.status(400).json({ error: "Fee transaction failed on-chain", details: txInfo.meta.err });
+    }
+
+    console.log(`[Withdraw Complete] Fee transaction verified: ${feeSignature}`);
+
+    // 3.5 Find or create withdrawal log
+    let logId = await withdrawalLogger.findByFeeSignature(feeSignature);
+    if (!logId || !logId.id) {
+      // Create log if not found (user may have skipped initiate endpoint)
+      logId = { id: await withdrawalLogger.logInitiate(userId, walletAddress, amount, 
+        { feeAmountSol: 0, feeAmountUsd: 0.50, solPrice: 0 }, null, null) };
+    }
+
+    // 4. Mark fee as used (prevent duplicate usage)
+    await usedFeesRef.set({
+      userId,
+      amount,
+      walletAddress,
+      usedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // 5. Deduct from Firebase totalRealmkin
+    const rewardsRef = fs.collection("userRewards").doc(userId);
+
+    let newBalance;
+    try {
+      await fs.runTransaction(async (transaction) => {
+        const rewardsDoc = await transaction.get(rewardsRef);
+
+        if (!rewardsDoc.exists) {
+          throw new Error("User rewards not found");
+        }
+
+        const currentBalance = rewardsDoc.data()?.totalRealmkin || 0;
+
+        if (amount > currentBalance) {
+          throw new Error("Insufficient balance");
+        }
+
+        newBalance = currentBalance - amount;
+
+        transaction.update(rewardsRef, {
+          totalRealmkin: newBalance,
+          totalClaimed: admin.firestore.FieldValue.increment(amount),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      });
+
+      console.log(`[Withdraw Complete] Firebase balance updated: ${newBalance}`);
+      
+      // Log balance deduction
+      const balanceBefore = newBalance + amount;
+      if (logId && logId.id) {
+        await withdrawalLogger.logFeeVerified(logId.id, feeSignature, balanceBefore, newBalance);
+      }
+    } catch (err) {
+      console.error(`[Withdraw Complete] Firebase update failed: ${err.message}`);
+      
+      // Log failure
+      if (logId && logId.id) {
+        await withdrawalLogger.logFailed(logId.id, `Firebase update failed: ${err.message}`, 'FIREBASE_ERROR');
+      }
+      
+      // Rollback: remove used fee marker
+      try {
+        await usedFeesRef.delete();
+      } catch (deleteErr) {
+        console.error(`[Withdraw Complete] Failed to rollback fee marker: ${deleteErr.message}`);
+      }
+
+      return res.status(500).json({
+        error: "Failed to update balance",
+        details: err.message,
+        note: "Fee was charged but withdrawal failed. Please contact support."
+      });
+    }
+
+    // 6. Send MKIN tokens to user wallet
+    let mkinTxHash;
+    try {
+      const { sendMkinTokens } = await import('./utils/mkinTransfer.js');
+      mkinTxHash = await sendMkinTokens(walletAddress, amount);
+      console.log(`[Withdraw Complete] MKIN sent: ${mkinTxHash}`);
+      
+      // Log successful completion
+      if (logId && logId.id) {
+        await withdrawalLogger.logCompleted(logId.id, mkinTxHash);
+      }
+    } catch (err) {
+      console.error(`[Withdraw Complete] MKIN transfer failed: ${err.message}`);
+      
+      // Log MKIN transfer failure (before refund attempt)
+      if (logId && logId.id) {
+        await withdrawalLogger.logFailed(logId.id, `MKIN transfer failed: ${err.message}`, 'MKIN_TRANSFER_ERROR');
+      }
+
+      // REFUND: Restore Firebase balance
+      try {
+        await fs.runTransaction(async (transaction) => {
+          const rewardsDoc = await transaction.get(rewardsRef);
+          const currentBal = rewardsDoc.exists ? (rewardsDoc.data().totalRealmkin || 0) : 0;
+          
+          transaction.update(rewardsRef, {
+            totalRealmkin: currentBal + amount,
+            totalClaimed: admin.firestore.FieldValue.increment(-amount),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        });
+
+        console.log(`[Withdraw Complete] Balance refunded after MKIN transfer failure`);
+        
+        // Update log to show refunded status
+        if (logId && logId.id) {
+          await withdrawalLogger.logRefunded(logId.id, 'Automatic refund after MKIN transfer failure');
+        }
+
+        return res.status(500).json({
+          error: "Failed to send MKIN tokens",
+          refunded: true,
+          message: "Your balance has been refunded. The $0.50 fee was not refunded."
+        });
+      } catch (refundError) {
+        console.error(`[Withdraw Complete] Refund failed: ${refundError.message}`);
+
+        // Log for manual processing
+        await fs.collection("withdrawalErrors").add({
+          userId,
+          amount,
+          walletAddress,
+          feeSignature,
+          error: "Refund failed - requires manual intervention",
+          mkinTransferError: err.message,
+          refundError: refundError.message,
+          timestamp: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        return res.status(500).json({
+          error: "Critical error - contact support",
+          message: "Please contact support with fee signature: " + feeSignature
+        });
+      }
+    }
+
+    // 7. Record in Firebase transactionHistory
+    try {
+      await fs.collection("transactionHistory").add({
+        userId,
+        walletAddress,
+        type: "withdraw",
+        amount,
+        feeSignature,
+        mkinTxHash,
+        description: `Withdrew ${amount} MKIN (fee: $0.50)`,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    } catch (err) {
+      console.warn(`[Withdraw Complete] Failed to record history: ${err.message}`);
+      // Non-critical, continue
+    }
+
+    res.json({
+      success: true,
+      txHash: mkinTxHash,
+      newBalance: newBalance,
+      message: "Withdrawal successful"
+    });
+
+  } catch (err) {
+    console.error("[Withdraw Complete] Error:", err);
+    res.status(500).json({ error: "Failed to complete withdrawal", details: err.message });
+  }
+});
+
+// ============================================================================
+// Admin Endpoints
+// ============================================================================
 
 // Admin: adjust unified balance for any target (delta-based)
 // body: { target: { firebaseUid?, walletAddress?, discordId? }, delta: int, reason?: string, refId: string }

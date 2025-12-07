@@ -18,6 +18,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@discordjs/rest": "^2.5.1",
+    "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.4",
     "@supabase/supabase-js": "^2.55.0",
     "axios": "^1.11.0",

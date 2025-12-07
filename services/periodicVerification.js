@@ -96,21 +96,20 @@ class PeriodicVerificationService {
         
         console.log(`[periodic-verification] Processing batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(users.length/BATCH_SIZE)}`);
         
-        // Process batch concurrently with individual rate limiting
-        const batchResults = await Promise.allSettled(
-          batch.map(user => this.checkAndUpdateUser(user))
-        );
-        
-        // Process results
-        for (let j = 0; j < batchResults.length; j++) {
-          const result = batchResults[j];
+        // Process batch sequentially to avoid hitting rate limits
+        for (let j = 0; j < batch.length; j++) {
           const user = batch[j];
           
-          if (result.status === 'fulfilled') {
+          try {
+            await this.checkAndUpdateUser(user);
             checked++;
-            // Count role changes if needed (you may need to track this differently)
-          } else {
-            console.error(`[periodic-verification] Error checking user ${user.discord_id}:`, result.reason.message);
+            
+            // Add delay between users in the same batch
+            if (j < batch.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_USERS));
+            }
+          } catch (err) {
+            console.error(`[periodic-verification] Error checking user ${user.discord_id}:`, err.message);
             errors++;
           }
         }

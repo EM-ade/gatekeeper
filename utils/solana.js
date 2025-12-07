@@ -134,7 +134,7 @@ export const getRealmkinNftsFromHelius = async (walletAddress, allowedAddresses 
  * @returns {Promise<Array>} A promise that resolves to an array of raw Magic Eden NFT objects.
  */
 const getAllNftsFromMagicEden = async (walletAddress) => {
-    const url = `https://api-mainnet.magiceden.io/v2/wallets/${walletAddress}/tokens`;
+    const url = `https://api-mainnet.magiceden.dev/v2/wallets/${walletAddress}/tokens`;
     const options = {
         method: 'GET',
         headers: { accept: 'application/json' }
