@@ -7,6 +7,8 @@ import { Connection, PublicKey, Transaction, Keypair, sendAndConfirmTransaction 
 import {
   createTransferCheckedInstruction,
   getAssociatedTokenAddress,
+  createAssociatedTokenAccountInstruction,
+  getAccount,
 } from '@solana/spl-token';
 
 /**
@@ -26,7 +28,11 @@ async function sendMkinTokens(recipientWalletAddress, amount) {
 
   console.log('[MKIN Transfer] Sending ' + amount + ' MKIN to ' + recipientWalletAddress);
 
-  const connection = new Connection(solanaRpcUrl, 'confirmed');
+  // Create connection with better settings to prevent timeouts
+  const connection = new Connection(solanaRpcUrl, {
+    commitment: 'confirmed',
+    confirmTransactionInitialTimeout: 60000, // 60 seconds timeout
+  });
   const gatekeeperKeypair = Keypair.fromSecretKey(
     Buffer.from(JSON.parse(gatekeeperKeypairJson))
   );
@@ -45,28 +51,61 @@ async function sendMkinTokens(recipientWalletAddress, amount) {
     false // allowOwnerOffCurve
   );
 
+  console.log('[MKIN Transfer] From: ' + fromTokenAccount.toBase58());
+  console.log('[MKIN Transfer] To: ' + toTokenAccount.toBase58());
+
+  // Create transaction
+  const transaction = new Transaction();
+  transaction.feePayer = gatekeeperKeypair.publicKey;
+
+  // Check if recipient token account exists, create if not
+  let recipientAccountExists = true;
+  try {
+    const accountInfo = await getAccount(connection, toTokenAccount);
+    console.log('[MKIN Transfer] Recipient token account exists with balance: ' + 
+                (parseInt(accountInfo.amount) / Math.pow(10, 9)));
+  } catch (error) {
+    recipientAccountExists = false;
+    console.log('[MKIN Transfer] Recipient token account does not exist - will create it');
+    console.log('[MKIN Transfer] Account creation will cost ~0.00203928 SOL (paid by hot wallet)');
+    
+    // Add instruction to create recipient's token account
+    transaction.add(
+      createAssociatedTokenAccountInstruction(
+        gatekeeperKeypair.publicKey, // payer (gatekeeper pays for account creation)
+        toTokenAccount,              // token account address
+        recipientPubkey,             // owner of the new account
+        mkinMint                     // mint
+      )
+    );
+  }
+
   // MKIN has 9 decimals (adjust if different)
   const decimals = 9;
   const amountInSmallestUnit = amount * Math.pow(10, decimals);
-
-  console.log('[MKIN Transfer] From: ' + fromTokenAccount.toBase58());
-  console.log('[MKIN Transfer] To: ' + toTokenAccount.toBase58());
   console.log('[MKIN Transfer] Amount (raw): ' + amountInSmallestUnit);
 
-  // Create transfer instruction
-  const transferInstruction = createTransferCheckedInstruction(
-    fromTokenAccount,
-    mkinMint,
-    toTokenAccount,
-    gatekeeperKeypair.publicKey,
-    amountInSmallestUnit,
-    decimals
+  // Add transfer instruction
+  transaction.add(
+    createTransferCheckedInstruction(
+      fromTokenAccount,
+      mkinMint,
+      toTokenAccount,
+      gatekeeperKeypair.publicKey,
+      amountInSmallestUnit,
+      decimals
+    )
   );
 
-  const transaction = new Transaction().add(transferInstruction);
-  transaction.feePayer = gatekeeperKeypair.publicKey;
+  // Get recent blockhash (CRITICAL: prevents "Blockhash not found" errors)
+  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+  transaction.recentBlockhash = blockhash;
+  transaction.lastValidBlockHeight = lastValidBlockHeight;
 
-  // Send transaction
+  console.log('[MKIN Transfer] Blockhash: ' + blockhash);
+  console.log('[MKIN Transfer] Last valid block height: ' + lastValidBlockHeight);
+
+  // Send transaction with retry logic
   const txHash = await sendAndConfirmTransaction(
     connection,
     transaction,
@@ -74,6 +113,7 @@ async function sendMkinTokens(recipientWalletAddress, amount) {
     {
       commitment: 'confirmed',
       skipPreflight: false,
+      maxRetries: 3, // Retry up to 3 times if it fails
     }
   );
 
