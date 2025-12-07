@@ -916,12 +916,15 @@ app.post("/api/withdraw/initiate", verifyFirebase, async (req, res) => {
       });
     }
 
-    // 4. Get SOL price and calculate fee
+    // 4. Get SOL price and calculate tiered fee
+    // $0.50 for withdrawals under 10,000 MKIN
+    // $1.00 for withdrawals of 10,000 MKIN or more
     const { getSolPriceUSD } = await import('./utils/solPrice.js');
     const solPrice = await getSolPriceUSD();
-    const feeInUsd = 0.50;
+    const feeInUsd = amount >= 10000 ? 1.00 : 0.50;
     const feeInSol = feeInUsd / solPrice;
 
+    console.log(`[Withdraw Initiate] Amount: ${amount} MKIN, Fee Tier: $${feeInUsd}`);
     console.log(`[Withdraw Initiate] Fee: $${feeInUsd} = ${feeInSol.toFixed(6)} SOL (SOL price: $${solPrice})`);
 
     // Update log with fee details
