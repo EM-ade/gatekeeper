@@ -937,7 +937,7 @@ app.post("/api/withdraw/initiate", verifyFirebase, async (req, res) => {
 
     // 5. Create SOL transfer transaction (user -> treasury)
     const { Connection, PublicKey, Transaction, SystemProgram } = await import('@solana/web3.js');
-    const treasuryPubkey = new PublicKey(process.env.TREASURY_WALLET || '8w1dD5Von2GBTa9cVASeC2A9F3gRrCqHA7QPds5pfXsM');
+    const treasuryPubkey = new PublicKey(process.env.TREASURY_WALLET || '785QofuiXAy29RnDcH13CcnJu7fqLNp4r9SxeA9Yg9Gt');
     const userPubkey = new PublicKey(walletAddress);
     const solanaRpcUrl = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
 
