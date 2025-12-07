@@ -68,35 +68,36 @@ async function handleVerifyAll(interaction) {
       // Process users in smaller batches with better rate limiting using configuration
       const BATCH_SIZE = RATE_LIMITING_CONFIG.manualVerification.batchSize;
       const DELAY_BETWEEN_BATCHES = RATE_LIMITING_CONFIG.manualVerification.delayBetweenBatches;
+      const DELAY_BETWEEN_USERS = RATE_LIMITING_CONFIG.manualVerification.delayBetweenUsers;
 
       for (let i = 0; i < users.length; i += BATCH_SIZE) {
         const batch = users.slice(i, i + BATCH_SIZE);
         
         console.log(`[manual-verify] Processing batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(users.length/BATCH_SIZE)}`);
         
-        // Process batch concurrently with individual rate limiting
-        const batchResults = await Promise.allSettled(
-          batch.map(user => {
-            console.log(`[manual-verify] Verifying user ${user.discord_id}...`);
-            return global.periodicVerificationService.checkAndUpdateUser(user);
-          })
-        );
-        
-        // Process results
-        for (let j = 0; j < batchResults.length; j++) {
-          const result = batchResults[j];
+        // Process batch SEQUENTIALLY to avoid rate limits
+        for (let j = 0; j < batch.length; j++) {
+          const user = batch[j];
           
-          if (result.status === 'fulfilled') {
+          try {
+            console.log(`[manual-verify] Verifying user ${user.discord_id} (${i + j + 1}/${users.length})...`);
+            await global.periodicVerificationService.checkAndUpdateUser(user);
             verified++;
-          } else {
-            console.error(`[manual-verify] Error verifying user:`, result.reason.message);
+          } catch (error) {
+            console.error(`[manual-verify] Error verifying user ${user.discord_id}:`, error.message);
             failed++;
+          }
+          
+          // Add delay between users to prevent rate limits
+          if (j < batch.length - 1) {
+            await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_USERS));
           }
         }
         
         // Update progress
         await interaction.editReply({
-          content: `⏳ Verification progress: ${Math.min(i + BATCH_SIZE, users.length)}/${users.length} users processed...`,
+          content: `⏳ Verification progress: ${Math.min(i + BATCH_SIZE, users.length)}/${users.length} users processed...\n` +
+            `✅ Verified: ${verified} | ❌ Failed: ${failed}`,
         });
         
         // Wait between batches
