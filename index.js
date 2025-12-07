@@ -21,6 +21,8 @@ import {
 import * as guildVerificationConfigStore from "./repositories/guildVerificationConfigsRepository.js";
 import PeriodicVerificationService from "./services/periodicVerification.js";
 import { PublicKey } from '@solana/web3.js';
+import { heliusRateLimiter } from "./utils/rateLimiter.js";
+import withdrawalLogger from "./services/withdrawalLogger.js";
 
 // Check for essential environment variables
 if (!process.env.DISCORD_BOT_TOKEN) {
@@ -134,8 +136,7 @@ client.once("ready", async () => {
 
   // Start periodic verification service
   const periodicVerification = new PeriodicVerificationService(client);
-  // Temporarily disabled to avoid rate limits during testing
-  // periodicVerification.start();
+  periodicVerification.start();
 
   // Export the periodic verification service for use in commands
   global.periodicVerificationService = periodicVerification;
@@ -873,6 +874,16 @@ app.post("/api/withdraw/initiate", verifyFirebase, async (req, res) => {
 
     console.log(`[Withdraw Initiate] User: ${userId}, Amount: ${amount}, Wallet: ${walletAddress}`);
 
+    // Log withdrawal initiation (before validation to track all attempts)
+    const logId = await withdrawalLogger.logInitiate(
+      userId,
+      walletAddress,
+      amount,
+      { feeAmountSol: 0, feeAmountUsd: 0.50, solPrice: 0 }, // Will update later
+      req.ip,
+      req.headers['user-agent']
+    );
+
     // 1. Validate input
     if (!amount || !walletAddress) {
       return res.status(400).json({ error: "Missing amount or walletAddress" });
@@ -920,6 +931,17 @@ app.post("/api/withdraw/initiate", verifyFirebase, async (req, res) => {
     const feeInSol = feeInUsd / solPrice;
 
     console.log(`[Withdraw Initiate] Fee: $${feeInUsd} = ${feeInSol.toFixed(6)} SOL (SOL price: $${solPrice})`);
+
+    // Update log with fee details
+    if (logId) {
+      await sql`
+        UPDATE withdrawal_transactions 
+        SET fee_amount_sol = ${feeInSol}, 
+            sol_price_usd = ${solPrice},
+            fee_amount_usd = ${feeInUsd}
+        WHERE id = ${logId}
+      `;
+    }
 
     // 5. Create SOL transfer transaction (user -> treasury)
     const { Connection, PublicKey, Transaction, SystemProgram } = await import('@solana/web3.js');
@@ -1018,10 +1040,14 @@ app.post("/api/withdraw/complete", verifyFirebase, async (req, res) => {
     
     while (attempts < maxAttempts) {
       try {
-        txInfo = await connection.getTransaction(feeSignature, {
-          commitment: 'confirmed',
-          maxSupportedTransactionVersion: 0
-        });
+        // Use rate limiter for transaction fetching
+        txInfo = await heliusRateLimiter.execute(
+          () => connection.getTransaction(feeSignature, {
+            commitment: 'confirmed',
+            maxSupportedTransactionVersion: 0
+          }),
+          `withdrawal-verify-${userId.substring(0, 8)}`
+        );
         
         if (txInfo) break; // Transaction found
         
@@ -1047,6 +1073,14 @@ app.post("/api/withdraw/complete", verifyFirebase, async (req, res) => {
     }
 
     console.log(`[Withdraw Complete] Fee transaction verified: ${feeSignature}`);
+
+    // 3.5 Find or create withdrawal log
+    let logId = await withdrawalLogger.findByFeeSignature(feeSignature);
+    if (!logId || !logId.id) {
+      // Create log if not found (user may have skipped initiate endpoint)
+      logId = { id: await withdrawalLogger.logInitiate(userId, walletAddress, amount, 
+        { feeAmountSol: 0, feeAmountUsd: 0.50, solPrice: 0 }, null, null) };
+    }
 
     // 4. Mark fee as used (prevent duplicate usage)
     await usedFeesRef.set({
@@ -1084,8 +1118,19 @@ app.post("/api/withdraw/complete", verifyFirebase, async (req, res) => {
       });
 
       console.log(`[Withdraw Complete] Firebase balance updated: ${newBalance}`);
+      
+      // Log balance deduction
+      const balanceBefore = newBalance + amount;
+      if (logId && logId.id) {
+        await withdrawalLogger.logFeeVerified(logId.id, feeSignature, balanceBefore, newBalance);
+      }
     } catch (err) {
       console.error(`[Withdraw Complete] Firebase update failed: ${err.message}`);
+      
+      // Log failure
+      if (logId && logId.id) {
+        await withdrawalLogger.logFailed(logId.id, `Firebase update failed: ${err.message}`, 'FIREBASE_ERROR');
+      }
       
       // Rollback: remove used fee marker
       try {
@@ -1107,8 +1152,18 @@ app.post("/api/withdraw/complete", verifyFirebase, async (req, res) => {
       const { sendMkinTokens } = await import('./utils/mkinTransfer.js');
       mkinTxHash = await sendMkinTokens(walletAddress, amount);
       console.log(`[Withdraw Complete] MKIN sent: ${mkinTxHash}`);
+      
+      // Log successful completion
+      if (logId && logId.id) {
+        await withdrawalLogger.logCompleted(logId.id, mkinTxHash);
+      }
     } catch (err) {
       console.error(`[Withdraw Complete] MKIN transfer failed: ${err.message}`);
+      
+      // Log MKIN transfer failure (before refund attempt)
+      if (logId && logId.id) {
+        await withdrawalLogger.logFailed(logId.id, `MKIN transfer failed: ${err.message}`, 'MKIN_TRANSFER_ERROR');
+      }
 
       // REFUND: Restore Firebase balance
       try {
@@ -1124,6 +1179,11 @@ app.post("/api/withdraw/complete", verifyFirebase, async (req, res) => {
         });
 
         console.log(`[Withdraw Complete] Balance refunded after MKIN transfer failure`);
+        
+        // Update log to show refunded status
+        if (logId && logId.id) {
+          await withdrawalLogger.logRefunded(logId.id, 'Automatic refund after MKIN transfer failure');
+        }
 
         return res.status(500).json({
           error: "Failed to send MKIN tokens",
