@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { PublicKey } from '@solana/web3.js';
 import { heliusRateLimiter } from '../utils/rateLimiter.js';
+import nftCache from './nftCache.js';
 
 class NFTVerificationService {
   constructor(client = null) {
@@ -64,6 +65,12 @@ class NFTVerificationService {
         throw new Error('Invalid Solana wallet address');
       }
 
+      // Check cache first
+      const cached = nftCache.get(walletAddress);
+      if (cached) {
+        return cached;
+      }
+
       let allNFTs = [];
       let page = 1;
       let hasMore = true;
@@ -122,6 +129,9 @@ class NFTVerificationService {
       }
 
       console.log(`[nft-verification] Total ${allNFTs.length} NFTs found for wallet ${walletAddress}`);
+
+      // Cache the results
+      nftCache.set(walletAddress, allNFTs);
 
       return allNFTs;
     } catch (error) {

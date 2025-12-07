@@ -893,15 +893,7 @@ app.post("/api/withdraw/initiate", verifyFirebase, async (req, res) => {
       return res.status(400).json({ error: "Invalid amount - must be positive integer" });
     }
 
-    // 2. Check minimum withdrawal amount (1,000 MKIN)
-    const MIN_WITHDRAWAL = 1000;
-    if (amount < MIN_WITHDRAWAL) {
-      return res.status(400).json({
-        error: `Minimum withdrawal is ${MIN_WITHDRAWAL} MKIN`,
-        minimum: MIN_WITHDRAWAL,
-        requested: amount
-      });
-    }
+    // Minimum withdrawal check removed - users can withdraw any amount
 
     // 3. Check Firebase balance
     if (!admin.apps.length || !admin.firestore) {
@@ -1003,11 +995,11 @@ app.post("/api/withdraw/complete", verifyFirebase, async (req, res) => {
       return res.status(400).json({ error: "Invalid amount" });
     }
 
-    // Check minimum withdrawal
-    const MIN_WITHDRAWAL = 1000;
-    if (amount < MIN_WITHDRAWAL) {
+    // Minimum withdrawal check removed - users can withdraw any amount
+    // Keeping validation for positive amounts only
+    if (false) { // Disabled minimum check
       return res.status(400).json({
-        error: `Minimum withdrawal is ${MIN_WITHDRAWAL} MKIN`,
+        error: ``,
       });
     }
 
