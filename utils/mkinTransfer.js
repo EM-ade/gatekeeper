@@ -17,6 +17,12 @@ import {
  * @param {number} amount - Amount of MKIN to send (in whole tokens, not lamports)
  * @returns {Promise<string>} Transaction hash
  */
+/**
+ * Send MKIN tokens to a user's wallet
+ * @param {string} recipientWalletAddress - Destination wallet address
+ * @param {number} amount - Amount of MKIN to send (in whole tokens, not lamports)
+ * @returns {Promise<string>} Transaction hash
+ */
 async function sendMkinTokens(recipientWalletAddress, amount) {
   const solanaRpcUrl = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
   const mkinTokenMint = process.env.MKIN_TOKEN_MINT;
@@ -62,13 +68,13 @@ async function sendMkinTokens(recipientWalletAddress, amount) {
   let recipientAccountExists = true;
   try {
     const accountInfo = await getAccount(connection, toTokenAccount);
-    console.log('[MKIN Transfer] Recipient token account exists with balance: ' + 
-                (parseInt(accountInfo.amount) / Math.pow(10, 9)));
+    console.log('[MKIN Transfer] Recipient token account exists with balance: ' +
+      (parseInt(accountInfo.amount) / Math.pow(10, 9)));
   } catch (error) {
     recipientAccountExists = false;
     console.log('[MKIN Transfer] Recipient token account does not exist - will create it');
     console.log('[MKIN Transfer] Account creation will cost ~0.00203928 SOL (paid by hot wallet)');
-    
+
     // Add instruction to create recipient's token account
     transaction.add(
       createAssociatedTokenAccountInstruction(
@@ -105,20 +111,55 @@ async function sendMkinTokens(recipientWalletAddress, amount) {
   console.log('[MKIN Transfer] Blockhash: ' + blockhash);
   console.log('[MKIN Transfer] Last valid block height: ' + lastValidBlockHeight);
 
-  // Send transaction with retry logic
-  const txHash = await sendAndConfirmTransaction(
-    connection,
-    transaction,
-    [gatekeeperKeypair],
-    {
-      commitment: 'confirmed',
-      skipPreflight: false,
-      maxRetries: 3, // Retry up to 3 times if it fails
-    }
-  );
+  // Sign transaction
+  transaction.sign(gatekeeperKeypair);
+  const rawTransaction = transaction.serialize();
+  const txHash = await connection.sendRawTransaction(rawTransaction, {
+    skipPreflight: false,
+    preflightCommitment: 'confirmed',
+    maxRetries: 3,
+  });
 
-  console.log('[MKIN Transfer] Success! TX: ' + txHash);
-  return txHash;
+  console.log('[MKIN Transfer] Transaction sent: ' + txHash);
+
+  // Confirm transaction with robust error handling
+  try {
+    const confirmation = await connection.confirmTransaction({
+      signature: txHash,
+      blockhash: blockhash,
+      lastValidBlockHeight: lastValidBlockHeight,
+    }, 'confirmed');
+
+    if (confirmation.value.err) {
+      throw new Error('Transaction failed: ' + JSON.stringify(confirmation.value.err));
+    }
+
+    console.log('[MKIN Transfer] Success! TX: ' + txHash);
+    return txHash;
+  } catch (error) {
+    console.warn('[MKIN Transfer] Confirmation timed out or failed, checking status manually...');
+
+    // Check if it actually landed despite the error
+    try {
+      const status = await connection.getSignatureStatus(txHash);
+      if (status && status.value && status.value.confirmationStatus &&
+        (status.value.confirmationStatus === 'confirmed' || status.value.confirmationStatus === 'finalized')) {
+
+        if (status.value.err) {
+          throw new Error('Transaction failed on-chain: ' + JSON.stringify(status.value.err));
+        }
+
+        console.log('[MKIN Transfer] Transaction actually succeeded despite confirmation error! TX: ' + txHash);
+        return txHash;
+      }
+    } catch (statusError) {
+      console.warn('[MKIN Transfer] Could not verify status manually: ' + statusError.message);
+    }
+
+    // If we're here, it likely really failed or we can't verify it.
+    // Re-throw the original error to trigger the refund logic in the caller.
+    throw error;
+  }
 }
 
 /**
