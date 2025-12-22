@@ -154,4 +154,34 @@ async function getSolPriceUSD() {
   return fallbackPrice;
 }
 
-export { getSolPriceUSD };
+/**
+ * Calculate SOL amount needed for a USD target
+ * @param {number} usdAmount - Target amount in USD (e.g., 2.0 for $2)
+ * @returns {Promise<number>} - SOL amount needed
+ */
+async function calculateSolForUSD(usdAmount) {
+  const solPrice = await getSolPriceUSD();
+  const solAmount = usdAmount / solPrice;
+  
+  console.log(`💵 $${usdAmount} USD = ${solAmount.toFixed(4)} SOL (at $${solPrice}/SOL)`);
+  
+  return solAmount;
+}
+
+/**
+ * Get fee amount in SOL for a given USD target
+ * @param {number} usdAmount - Target fee in USD (default: 2.0)
+ * @returns {Promise<Object>} - { solAmount, usdAmount, solPrice }
+ */
+async function getFeeInSol(usdAmount = 2.0) {
+  const solPrice = await getSolPriceUSD();
+  const solAmount = usdAmount / solPrice;
+  
+  return {
+    solAmount,
+    usdAmount,
+    solPrice,
+  };
+}
+
+export { getSolPriceUSD, calculateSolForUSD, getFeeInSol };

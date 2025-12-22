@@ -2,7 +2,7 @@
 import "dotenv/config"; // Load environment variables
 console.log(
   "Environment loaded, DATABASE_URL:",
-  process.env.DATABASE_URL ? "Set" : "NOT SET",
+  process.env.DATABASE_URL ? "Set" : "NOT SET"
 );
 import { Client, GatewayIntentBits } from "discord.js";
 import commandHandler from "./handlers/command.js";
@@ -19,8 +19,8 @@ import {
   VerificationSessionError,
 } from "./services/verificationSessionService.js";
 import * as guildVerificationConfigStore from "./repositories/guildVerificationConfigsRepository.js";
-import PeriodicVerificationService from "./services/periodicVerification.js";
-import { PublicKey } from '@solana/web3.js';
+// import PeriodicVerificationService from "./services/periodicVerification.js";
+import { PublicKey } from "@solana/web3.js";
 import { heliusRateLimiter } from "./utils/rateLimiter.js";
 import withdrawalLogger from "./services/withdrawalLogger.js";
 
@@ -31,7 +31,7 @@ if (!process.env.DISCORD_BOT_TOKEN) {
 if (!process.env.HELIUS_API_KEY) {
   // Helius is preferred, so its API key is essential if we want to use it.
   console.warn(
-    "HELIUS_API_KEY environment variable is not set. Helius fetching will be skipped.",
+    "HELIUS_API_KEY environment variable is not set. Helius fetching will be skipped."
   );
 }
 if (!process.env.SUPABASE_URL) {
@@ -124,7 +124,7 @@ client.once("ready", async () => {
     } catch (e) {
       console.warn(
         "PvP schema initialization skipped/failed:",
-        e?.message || e,
+        e?.message || e
       );
     }
   } catch (error) {
@@ -135,32 +135,39 @@ client.once("ready", async () => {
   await eventHandler(client); // Register event listeners
 
   // Start periodic verification service
-  const periodicVerification = new PeriodicVerificationService(client);
-  periodicVerification.start();
+  // DISABLED: Periodic verification service
+  // const periodicVerification = new PeriodicVerificationService(client);
+  // periodicVerification.start();
 
   // Export the periodic verification service for use in commands
-  global.periodicVerificationService = periodicVerification;
+  // global.periodicVerificationService = periodicVerification;
 
   // Graceful shutdown
   process.on("SIGINT", () => {
     console.log("\nShutting down gracefully...");
-    periodicVerification.stop();
+    // periodicVerification.stop();
     process.exit(0);
   });
 
   // Register slash commands: prefer guild for fast updates if DISCORD_GUILD_ID is set
   const rest = new REST({ version: "10" }).setToken(
-    process.env.DISCORD_BOT_TOKEN,
+    process.env.DISCORD_BOT_TOKEN
   );
   try {
     const body = Array.from(client.commands.values()).map((cmd) =>
-      cmd.data.toJSON(),
+      cmd.data.toJSON()
     );
-    const clientId = process.env.DISCORD_CLIENT_ID;
+    const clientId = process.env.DISCORD_CLIENT_ID || client.user?.id;
+    if (!clientId) {
+      console.warn(
+        "Skipping slash command registration: DISCORD_CLIENT_ID not found."
+      );
+      return;
+    }
     const guildId = process.env.DISCORD_GUILD_ID;
     console.log(
       "Started refreshing application (/) commands. Mode:",
-      guildId ? "Guild" : "Global",
+      guildId ? "Guild" : "Global"
     );
 
     if (guildId) {
@@ -168,12 +175,12 @@ client.once("ready", async () => {
       try {
         await rest.put(Routes.applicationCommands(clientId), { body: [] });
         console.log(
-          "Cleared GLOBAL application (/) commands to prevent duplicates.",
+          "Cleared GLOBAL application (/) commands to prevent duplicates."
         );
       } catch (clearErr) {
         console.warn(
           "Warning: Failed to clear GLOBAL commands (continuing with guild registration):",
-          clearErr?.message || clearErr,
+          clearErr?.message || clearErr
         );
       }
 
@@ -182,13 +189,13 @@ client.once("ready", async () => {
         body,
       });
       console.log(
-        `Successfully reloaded GUILD application (/) commands for guild ${guildId}. Count: ${body.length}`,
+        `Successfully reloaded GUILD application (/) commands for guild ${guildId}. Count: ${body.length}`
       );
     } else {
       // Register GLOBAL commands
       await rest.put(Routes.applicationCommands(clientId), { body });
       console.log(
-        `Successfully reloaded GLOBAL application (/) commands. Count: ${body.length}`,
+        `Successfully reloaded GLOBAL application (/) commands. Count: ${body.length}`
       );
     }
   } catch (error) {
@@ -199,14 +206,42 @@ client.once("ready", async () => {
 // Initialize Firebase Admin for verifying Firebase ID tokens
 if (!admin.apps.length) {
   try {
-    let svcJson = null;
-    const rawEnv = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    // Prefer GOOGLE_APPLICATION_CREDENTIALS for file-based creds (more reliable)
+    if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+      try {
+        const svcJson = JSON.parse(fs.readFileSync(credPath, 'utf8'));
+        admin.initializeApp({
+          credential: admin.credential.cert(svcJson),
+          databaseURL: process.env.FIREBASE_DATABASE_URL,
+        });
+        console.log("Firebase Admin initialized with GOOGLE_APPLICATION_CREDENTIALS:", credPath);
+      } catch (e) {
+        console.error("Failed to load credentials from GOOGLE_APPLICATION_CREDENTIALS:", e);
+        throw e;
+      }
+    } 
+    // Fall back to FIREBASE_SERVICE_ACCOUNT_JSON env var
+    else {
+      let svcJson = null;
+      const rawEnv = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
     if (rawEnv) {
       // Strip UTF-8 BOM if present and trim
       let content = rawEnv.replace(/^\uFEFF/, "").trim();
+
+      // Fix: Strip surrounding single quotes if present (common .env issue)
+      if (content.startsWith("'") && content.endsWith("'")) {
+        content = content.slice(1, -1);
+      }
+
       if (content.startsWith("{")) {
         // JSON directly in env var
-        svcJson = JSON.parse(content);
+        try {
+          svcJson = JSON.parse(content);
+        } catch (e) {
+          console.error("JSON Parse Error. Content being parsed:", content);
+          throw e;
+        }
       } else if (/\.json$/i.test(content)) {
         // Treat as path to a JSON file (fallback)
         try {
@@ -218,7 +253,7 @@ if (!admin.apps.length) {
           console.warn(
             "Failed to read service account JSON from path:",
             content,
-            e,
+            e
           );
         }
       } else {
@@ -232,27 +267,32 @@ if (!admin.apps.length) {
     }
 
     if (svcJson) {
-      const initConfig = { 
-        credential: admin.credential.cert(svcJson)
+      // Ensure private_key has real newlines (env often stores as escaped \n)
+      if (svcJson.private_key && typeof svcJson.private_key === 'string') {
+        svcJson.private_key = svcJson.private_key.replace(/\\n/g, '\n');
+      }
+      const initConfig = {
+        credential: admin.credential.cert(svcJson),
       };
-      
+
       // Add databaseURL if available for Realtime Database
       if (process.env.FIREBASE_DATABASE_URL) {
         initConfig.databaseURL = process.env.FIREBASE_DATABASE_URL;
       }
-      
+
       admin.initializeApp(initConfig);
-      console.log("Firebase Admin initialized with project:", svcJson.project_id);
-    } else {
-      admin.initializeApp({
-        credential: admin.credential.applicationDefault(),
-      });
-      console.log("Firebase Admin initialized with application default credentials");
+      console.log(
+        "Firebase Admin initialized with FIREBASE_SERVICE_ACCOUNT_JSON, project:",
+        svcJson.project_id
+      );
+      } else {
+        throw new Error("No Firebase credentials found in environment");
+      }
     }
   } catch (err) {
     console.warn(
       "Firebase Admin failed to initialize (API auth disabled):",
-      err,
+      err
     );
   }
 }
@@ -288,8 +328,12 @@ app.use(
       }
     },
     credentials: true,
-  }),
+  })
 );
+
+// Import Staking Routes
+import stakingRoutes from "./routes/staking.js";
+app.use("/api/staking", stakingRoutes);
 
 // Health check
 app.get("/health", (_req, res) => res.json({ ok: true }));
@@ -387,7 +431,7 @@ app.get("/api/balance/:firebaseUid", async (req, res) => {
                             where user_balances.balance < ${seedAmount}
                         `;
             console.log(
-              `[balance] Seeded ${seedAmount} MKIN for user ${userId} (firebaseUid: ${firebaseUid})`,
+              `[balance] Seeded ${seedAmount} MKIN for user ${userId} (firebaseUid: ${firebaseUid})`
             );
           }
         }
@@ -417,7 +461,9 @@ app.post("/api/ledger", verifyFirebase, async (req, res) => {
       return res.status(400).json({ error: "refId required" });
     const userId = await ensureUserForFirebaseUid(req.firebaseUid);
     const result = await sql`
-            select public.apply_ledger_entry(${userId}::uuid, ${delta}::bigint, ${reason || ""}, ${refId}) as balance
+            select public.apply_ledger_entry(${userId}::uuid, ${delta}::bigint, ${
+      reason || ""
+    }, ${refId}) as balance
         `;
     const newBalance = result[0]?.balance ?? 0n;
     res.json({ balance: Number(newBalance) });
@@ -456,7 +502,7 @@ app.post("/api/ledger", verifyFirebase, async (req, res) => {
 app.delete("/api/link/discord", verifyFirebase, async (req, res) => {
   try {
     console.log(
-      `[link/discord] DELETE: Unlinking Discord for Firebase user ${req.firebaseUid}`,
+      `[link/discord] DELETE: Unlinking Discord for Firebase user ${req.firebaseUid}`
     );
 
     const result = await sql`
@@ -466,14 +512,14 @@ app.delete("/api/link/discord", verifyFirebase, async (req, res) => {
 
     if (result.length === 0) {
       console.log(
-        `[link/discord] No Discord link found for Firebase user ${req.firebaseUid}`,
+        `[link/discord] No Discord link found for Firebase user ${req.firebaseUid}`
       );
       return res.json({ ok: true, message: "No link to remove" });
     }
 
     const unlinked = result[0];
     console.log(
-      `[link/discord] Successfully unlinked Discord ${unlinked.discord_id} from Firebase user ${req.firebaseUid}`,
+      `[link/discord] Successfully unlinked Discord ${unlinked.discord_id} from Firebase user ${req.firebaseUid}`
     );
     return res.json({ ok: true, message: "Discord unlinked", unlinked });
   } catch (err) {
@@ -500,7 +546,7 @@ app.post("/api/link/discord", verifyFirebase, async (req, res) => {
       // If it's already linked to the same Firebase user, return success (idempotent)
       if (existing.firebase_uid === req.firebaseUid) {
         console.log(
-          `[link/discord] Discord ${discordId} already linked to this Firebase user`,
+          `[link/discord] Discord ${discordId} already linked to this Firebase user`
         );
         return res.json({
           ok: true,
@@ -510,7 +556,7 @@ app.post("/api/link/discord", verifyFirebase, async (req, res) => {
       }
       // If it's linked to a different user, return error
       console.warn(
-        `[link/discord] Discord ${discordId} already linked to different Firebase user`,
+        `[link/discord] Discord ${discordId} already linked to different Firebase user`
       );
       return res
         .status(409)
@@ -526,7 +572,7 @@ app.post("/api/link/discord", verifyFirebase, async (req, res) => {
         `;
     const linked = rows[0];
     console.log(
-      `[link/discord] Successfully linked Discord ${discordId} to Firebase user ${req.firebaseUid}`,
+      `[link/discord] Successfully linked Discord ${discordId} to Firebase user ${req.firebaseUid}`
     );
 
     // Optionally seed unified balance on first link
@@ -656,7 +702,9 @@ app.post("/api/link/discord", verifyFirebase, async (req, res) => {
           });
         }
       } else {
-        console.log("[link/discord] Skipping welcome DM: user not in guild yet");
+        console.log(
+          "[link/discord] Skipping welcome DM: user not in guild yet"
+        );
       }
     } catch (dmError) {
       console.warn("Failed to send welcome DM:", dmError);
@@ -698,7 +746,9 @@ app.get("/api/discord/is-member", verifyFirebase, async (req, res) => {
 
     const guildId = process.env.DISCORD_GUILD_ID;
     if (!guildId) {
-      return res.status(500).json({ error: "Guild not configured (DISCORD_GUILD_ID)" });
+      return res
+        .status(500)
+        .json({ error: "Guild not configured (DISCORD_GUILD_ID)" });
     }
 
     try {
@@ -787,8 +837,13 @@ app.post("/api/transfer", verifyFirebase, async (req, res) => {
     if (existingTransfer.exists) {
       console.log(`[Transfer] Duplicate refId detected: ${refId}`);
       // Return current sender balance (idempotent)
-      const senderRewards = await fs.collection("userRewards").doc(senderUid).get();
-      const balance = senderRewards.exists ? (senderRewards.data().totalRealmkin || 0) : 0;
+      const senderRewards = await fs
+        .collection("userRewards")
+        .doc(senderUid)
+        .get();
+      const balance = senderRewards.exists
+        ? senderRewards.data().totalRealmkin || 0
+        : 0;
       return res.json({ balance });
     }
 
@@ -811,7 +866,9 @@ app.post("/api/transfer", verifyFirebase, async (req, res) => {
           throw new Error("Insufficient funds");
         }
 
-        const recipientBalance = recipientDoc.exists ? (recipientDoc.data().totalRealmkin || 0) : 0;
+        const recipientBalance = recipientDoc.exists
+          ? recipientDoc.data().totalRealmkin || 0
+          : 0;
 
         newSenderBalance = senderBalance - amount;
         const newRecipientBalance = recipientBalance + amount;
@@ -847,7 +904,9 @@ app.post("/api/transfer", verifyFirebase, async (req, res) => {
         });
       });
 
-      console.log(`[Transfer] Success: ${amount} MKIN from ${senderUid} to ${recipientUid}`);
+      console.log(
+        `[Transfer] Success: ${amount} MKIN from ${senderUid} to ${recipientUid}`
+      );
       res.json({ balance: newSenderBalance });
     } catch (err) {
       const msg = String(err.message || "").toLowerCase();
@@ -872,16 +931,18 @@ app.post("/api/withdraw/initiate", verifyFirebase, async (req, res) => {
     const { amount, walletAddress } = req.body;
     const userId = req.firebaseUid;
 
-    console.log(`[Withdraw Initiate] User: ${userId}, Amount: ${amount}, Wallet: ${walletAddress}`);
+    console.log(
+      `[Withdraw Initiate] User: ${userId}, Amount: ${amount}, Wallet: ${walletAddress}`
+    );
 
     // Log withdrawal initiation (before validation to track all attempts)
     const logId = await withdrawalLogger.logInitiate(
       userId,
       walletAddress,
       amount,
-      { feeAmountSol: 0, feeAmountUsd: 0.50, solPrice: 0 }, // Will update later
+      { feeAmountSol: 0, feeAmountUsd: 0.5, solPrice: 0 }, // Will update later
       req.ip,
-      req.headers['user-agent']
+      req.headers["user-agent"]
     );
 
     // 1. Validate input
@@ -890,7 +951,9 @@ app.post("/api/withdraw/initiate", verifyFirebase, async (req, res) => {
     }
 
     if (!Number.isInteger(amount) || amount <= 0) {
-      return res.status(400).json({ error: "Invalid amount - must be positive integer" });
+      return res
+        .status(400)
+        .json({ error: "Invalid amount - must be positive integer" });
     }
 
     // Minimum withdrawal check removed - users can withdraw any amount
@@ -912,20 +975,26 @@ app.post("/api/withdraw/initiate", verifyFirebase, async (req, res) => {
       return res.status(400).json({
         error: "Insufficient balance",
         available: totalRealmkin,
-        requested: amount
+        requested: amount,
       });
     }
 
     // 4. Get SOL price and calculate tiered fee
     // $0.50 for withdrawals under 10,000 MKIN
     // $1.00 for withdrawals of 10,000 MKIN or more
-    const { getSolPriceUSD } = await import('./utils/solPrice.js');
+    const { getSolPriceUSD } = await import("./utils/solPrice.js");
     const solPrice = await getSolPriceUSD();
-    const feeInUsd = amount >= 10000 ? 1.00 : 0.50;
+    const feeInUsd = amount >= 10000 ? 1.0 : 0.5;
     const feeInSol = feeInUsd / solPrice;
 
-    console.log(`[Withdraw Initiate] Amount: ${amount} MKIN, Fee Tier: $${feeInUsd}`);
-    console.log(`[Withdraw Initiate] Fee: $${feeInUsd} = ${feeInSol.toFixed(6)} SOL (SOL price: $${solPrice})`);
+    console.log(
+      `[Withdraw Initiate] Amount: ${amount} MKIN, Fee Tier: $${feeInUsd}`
+    );
+    console.log(
+      `[Withdraw Initiate] Fee: $${feeInUsd} = ${feeInSol.toFixed(
+        6
+      )} SOL (SOL price: $${solPrice})`
+    );
 
     // Update log with fee details
     if (logId) {
@@ -939,10 +1008,16 @@ app.post("/api/withdraw/initiate", verifyFirebase, async (req, res) => {
     }
 
     // 5. Create SOL transfer transaction (user -> treasury)
-    const { Connection, PublicKey, Transaction, SystemProgram } = await import('@solana/web3.js');
-    const treasuryPubkey = new PublicKey(process.env.TREASURY_WALLET || '785QofuiXAy29RnDcH13CcnJu7fqLNp4r9SxeA9Yg9Gt');
+    const { Connection, PublicKey, Transaction, SystemProgram } = await import(
+      "@solana/web3.js"
+    );
+    const treasuryPubkey = new PublicKey(
+      process.env.TREASURY_WALLET ||
+        "785QofuiXAy29RnDcH13CcnJu7fqLNp4r9SxeA9Yg9Gt"
+    );
     const userPubkey = new PublicKey(walletAddress);
-    const solanaRpcUrl = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
+    const solanaRpcUrl =
+      process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
 
     const connection = new Connection(solanaRpcUrl);
 
@@ -960,12 +1035,16 @@ app.post("/api/withdraw/initiate", verifyFirebase, async (req, res) => {
     transaction.feePayer = userPubkey;
 
     // 7. Serialize transaction for client to sign
-    const serializedTx = transaction.serialize({
-      requireAllSignatures: false,
-      verifySignatures: false
-    }).toString('base64');
+    const serializedTx = transaction
+      .serialize({
+        requireAllSignatures: false,
+        verifySignatures: false,
+      })
+      .toString("base64");
 
-    console.log(`[Withdraw Initiate] Transaction created, waiting for user signature`);
+    console.log(
+      `[Withdraw Initiate] Transaction created, waiting for user signature`
+    );
 
     res.json({
       success: true,
@@ -974,10 +1053,11 @@ app.post("/api/withdraw/initiate", verifyFirebase, async (req, res) => {
       feeAmountUsd: feeInUsd,
       solPrice: solPrice,
     });
-
   } catch (err) {
     console.error("[Withdraw Initiate] Error:", err);
-    res.status(500).json({ error: "Failed to initiate withdrawal", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Failed to initiate withdrawal", details: err.message });
   }
 });
 
@@ -1000,7 +1080,8 @@ app.post("/api/withdraw/complete", verifyFirebase, async (req, res) => {
 
     // Minimum withdrawal check removed - users can withdraw any amount
     // Keeping validation for positive amounts only
-    if (false) { // Disabled minimum check
+    if (false) {
+      // Disabled minimum check
       return res.status(400).json({
         error: ``,
       });
@@ -1016,15 +1097,17 @@ app.post("/api/withdraw/complete", verifyFirebase, async (req, res) => {
     const usedFeeDoc = await usedFeesRef.get();
 
     if (usedFeeDoc.exists) {
-      console.warn(`[Withdraw Complete] Duplicate fee signature: ${feeSignature}`);
+      console.warn(
+        `[Withdraw Complete] Duplicate fee signature: ${feeSignature}`
+      );
       return res.status(400).json({ error: "Fee signature already used" });
     }
 
     // 3. Verify fee transaction on-chain
-    const { Connection } = await import('@solana/web3.js');
+    const { Connection } = await import("@solana/web3.js");
     // Use Helius for better rate limits (paid tier)
     const heliusApiKey = process.env.HELIUS_API_KEY;
-    const solanaRpcUrl = heliusApiKey 
+    const solanaRpcUrl = heliusApiKey
       ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
       : "https://api.mainnet-beta.solana.com";
     const connection = new Connection(solanaRpcUrl);
@@ -1032,49 +1115,74 @@ app.post("/api/withdraw/complete", verifyFirebase, async (req, res) => {
     let txInfo;
     let attempts = 0;
     const maxAttempts = 5;
-    
+
     while (attempts < maxAttempts) {
       try {
         // Use rate limiter for transaction fetching
         txInfo = await heliusRateLimiter.execute(
-          () => connection.getTransaction(feeSignature, {
-            commitment: 'confirmed',
-            maxSupportedTransactionVersion: 0
-          }),
+          () =>
+            connection.getTransaction(feeSignature, {
+              commitment: "confirmed",
+              maxSupportedTransactionVersion: 0,
+            }),
           `withdrawal-verify-${userId.substring(0, 8)}`
         );
-        
+
         if (txInfo) break; // Transaction found
-        
+
         attempts++;
-        console.log(`[Withdraw Complete] Attempt ${attempts}/${maxAttempts}: Transaction not found yet, retrying...`);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+        console.log(
+          `[Withdraw Complete] Attempt ${attempts}/${maxAttempts}: Transaction not found yet, retrying...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second before retry
       } catch (err) {
-        console.error(`[Withdraw Complete] Failed to fetch transaction (attempt ${attempts + 1}): ${err.message}`);
+        console.error(
+          `[Withdraw Complete] Failed to fetch transaction (attempt ${
+            attempts + 1
+          }): ${err.message}`
+        );
         attempts++;
         if (attempts >= maxAttempts) {
-          return res.status(400).json({ error: "Fee transaction not found or not confirmed yet. Please wait and try again." });
+          return res.status(400).json({
+            error:
+              "Fee transaction not found or not confirmed yet. Please wait and try again.",
+          });
         }
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
 
     if (!txInfo) {
-      return res.status(400).json({ error: "Fee transaction not found after multiple attempts" });
+      return res
+        .status(400)
+        .json({ error: "Fee transaction not found after multiple attempts" });
     }
 
     if (txInfo.meta?.err) {
-      return res.status(400).json({ error: "Fee transaction failed on-chain", details: txInfo.meta.err });
+      return res.status(400).json({
+        error: "Fee transaction failed on-chain",
+        details: txInfo.meta.err,
+      });
     }
 
-    console.log(`[Withdraw Complete] Fee transaction verified: ${feeSignature}`);
+    console.log(
+      `[Withdraw Complete] Fee transaction verified: ${feeSignature}`
+    );
 
     // 3.5 Find or create withdrawal log
     let logId = await withdrawalLogger.findByFeeSignature(feeSignature);
     if (!logId || !logId.id) {
       // Create log if not found (user may have skipped initiate endpoint)
-      logId = { id: await withdrawalLogger.logInitiate(userId, walletAddress, amount, 
-        { feeAmountSol: 0, feeAmountUsd: 0.50, solPrice: 0 }, null, null) };
+      logId = {
+        id: await withdrawalLogger.logInitiate(
+          userId,
+          walletAddress,
+          amount,
+          { feeAmountSol: 0, feeAmountUsd: 0.5, solPrice: 0 },
+          null,
+          null
+        ),
+      };
     }
 
     // 4. Mark fee as used (prevent duplicate usage)
@@ -1112,60 +1220,81 @@ app.post("/api/withdraw/complete", verifyFirebase, async (req, res) => {
         });
       });
 
-      console.log(`[Withdraw Complete] Firebase balance updated: ${newBalance}`);
-      
+      console.log(
+        `[Withdraw Complete] Firebase balance updated: ${newBalance}`
+      );
+
       // Log balance deduction
       const balanceBefore = newBalance + amount;
       if (logId && logId.id) {
-        await withdrawalLogger.logFeeVerified(logId.id, feeSignature, balanceBefore, newBalance);
+        await withdrawalLogger.logFeeVerified(
+          logId.id,
+          feeSignature,
+          balanceBefore,
+          newBalance
+        );
       }
     } catch (err) {
-      console.error(`[Withdraw Complete] Firebase update failed: ${err.message}`);
-      
+      console.error(
+        `[Withdraw Complete] Firebase update failed: ${err.message}`
+      );
+
       // Log failure
       if (logId && logId.id) {
-        await withdrawalLogger.logFailed(logId.id, `Firebase update failed: ${err.message}`, 'FIREBASE_ERROR');
+        await withdrawalLogger.logFailed(
+          logId.id,
+          `Firebase update failed: ${err.message}`,
+          "FIREBASE_ERROR"
+        );
       }
-      
+
       // Rollback: remove used fee marker
       try {
         await usedFeesRef.delete();
       } catch (deleteErr) {
-        console.error(`[Withdraw Complete] Failed to rollback fee marker: ${deleteErr.message}`);
+        console.error(
+          `[Withdraw Complete] Failed to rollback fee marker: ${deleteErr.message}`
+        );
       }
 
       return res.status(500).json({
         error: "Failed to update balance",
         details: err.message,
-        note: "Fee was charged but withdrawal failed. Please contact support."
+        note: "Fee was charged but withdrawal failed. Please contact support.",
       });
     }
 
     // 6. Send MKIN tokens to user wallet
     let mkinTxHash;
     try {
-      const { sendMkinTokens } = await import('./utils/mkinTransfer.js');
+      const { sendMkinTokens } = await import("./utils/mkinTransfer.js");
       mkinTxHash = await sendMkinTokens(walletAddress, amount);
       console.log(`[Withdraw Complete] MKIN sent: ${mkinTxHash}`);
-      
+
       // Log successful completion
       if (logId && logId.id) {
         await withdrawalLogger.logCompleted(logId.id, mkinTxHash);
       }
     } catch (err) {
       console.error(`[Withdraw Complete] MKIN transfer failed: ${err.message}`);
-      
+
       // Log MKIN transfer failure (before refund attempt)
       if (logId && logId.id) {
-        await withdrawalLogger.logFailed(logId.id, `MKIN transfer failed: ${err.message}`, 'MKIN_TRANSFER_ERROR');
+        await withdrawalLogger.logFailed(
+          logId.id,
+          `MKIN transfer failed: ${err.message}`,
+          "MKIN_TRANSFER_ERROR"
+        );
       }
 
       // REFUND: Restore Firebase balance
       try {
         await fs.runTransaction(async (transaction) => {
           const rewardsDoc = await transaction.get(rewardsRef);
-          const currentBal = rewardsDoc.exists ? (rewardsDoc.data().totalRealmkin || 0) : 0;
-          
+          const currentBal = rewardsDoc.exists
+            ? rewardsDoc.data().totalRealmkin || 0
+            : 0;
+
           transaction.update(rewardsRef, {
             totalRealmkin: currentBal + amount,
             totalClaimed: admin.firestore.FieldValue.increment(-amount),
@@ -1173,20 +1302,28 @@ app.post("/api/withdraw/complete", verifyFirebase, async (req, res) => {
           });
         });
 
-        console.log(`[Withdraw Complete] Balance refunded after MKIN transfer failure`);
-        
+        console.log(
+          `[Withdraw Complete] Balance refunded after MKIN transfer failure`
+        );
+
         // Update log to show refunded status
         if (logId && logId.id) {
-          await withdrawalLogger.logRefunded(logId.id, 'Automatic refund after MKIN transfer failure');
+          await withdrawalLogger.logRefunded(
+            logId.id,
+            "Automatic refund after MKIN transfer failure"
+          );
         }
 
         return res.status(500).json({
           error: "Failed to send MKIN tokens",
           refunded: true,
-          message: "Your balance has been refunded. The $0.50 fee was not refunded."
+          message:
+            "Your balance has been refunded. The $0.50 fee was not refunded.",
         });
       } catch (refundError) {
-        console.error(`[Withdraw Complete] Refund failed: ${refundError.message}`);
+        console.error(
+          `[Withdraw Complete] Refund failed: ${refundError.message}`
+        );
 
         // Log for manual processing
         await fs.collection("withdrawalErrors").add({
@@ -1197,12 +1334,12 @@ app.post("/api/withdraw/complete", verifyFirebase, async (req, res) => {
           error: "Refund failed - requires manual intervention",
           mkinTransferError: err.message,
           refundError: refundError.message,
-          timestamp: admin.firestore.FieldValue.serverTimestamp()
+          timestamp: admin.firestore.FieldValue.serverTimestamp(),
         });
 
         return res.status(500).json({
           error: "Critical error - contact support",
-          message: "Please contact support with fee signature: " + feeSignature
+          message: "Please contact support with fee signature: " + feeSignature,
         });
       }
     }
@@ -1220,7 +1357,9 @@ app.post("/api/withdraw/complete", verifyFirebase, async (req, res) => {
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     } catch (err) {
-      console.warn(`[Withdraw Complete] Failed to record history: ${err.message}`);
+      console.warn(
+        `[Withdraw Complete] Failed to record history: ${err.message}`
+      );
       // Non-critical, continue
     }
 
@@ -1228,12 +1367,13 @@ app.post("/api/withdraw/complete", verifyFirebase, async (req, res) => {
       success: true,
       txHash: mkinTxHash,
       newBalance: newBalance,
-      message: "Withdrawal successful"
+      message: "Withdrawal successful",
     });
-
   } catch (err) {
     console.error("[Withdraw Complete] Error:", err);
-    res.status(500).json({ error: "Failed to complete withdrawal", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Failed to complete withdrawal", details: err.message });
   }
 });
 
@@ -1258,7 +1398,9 @@ app.post("/api/admin/adjust-firebase", verifyFirebase, async (req, res) => {
     if (!userId)
       return res.status(404).json({ error: "target user not found" });
     const result = await sql`
-            select public.apply_ledger_entry(${userId}::uuid, ${delta}::bigint, ${reason || "admin_adjustment"}, ${refId}) as balance
+            select public.apply_ledger_entry(${userId}::uuid, ${delta}::bigint, ${
+      reason || "admin_adjustment"
+    }, ${refId}) as balance
         `;
     const newBalance = result[0]?.balance ?? 0n;
     res.json({ balance: Number(newBalance) });
@@ -1450,7 +1592,7 @@ app.get("/api/verification/session/:token", async (req, res) => {
     let contractSummaries = [];
     try {
       const rules = await guildVerificationConfigStore.listByGuild(
-        session.guildId,
+        session.guildId
       );
       contractSummaries = rules.map((rule) => ({
         contractAddress: rule.contractAddress,
@@ -1480,7 +1622,7 @@ app.get("/api/verification/session/:token", async (req, res) => {
   } catch (err) {
     console.error(
       "[verification] GET /api/verification/session/:token error:",
-      err,
+      err
     );
     if (err instanceof VerificationSessionError) {
       return res.status(err.statusCode).json({ error: err.message });
@@ -1499,7 +1641,7 @@ app.post("/api/verification/session/:token/signature", async (req, res) => {
       "[verification] POST /signature - token:",
       token?.slice(0, 8),
       "walletAddress:",
-      walletAddress,
+      walletAddress
     );
 
     if (!signature) {
@@ -1524,9 +1666,10 @@ app.post("/api/verification/session/:token/signature", async (req, res) => {
       const specialRoles = [];
       if (global.periodicVerificationService && result.verification.nfts) {
         // Get eligible special roles by checking NFTs against configured special roles
-        const specialRolesMap = global.periodicVerificationService.specialRoles || new Map();
+        const specialRolesMap =
+          global.periodicVerificationService.specialRoles || new Map();
         const eligibleSpecialRoles = [];
-        
+
         // Check each NFT for matching special roles
         for (const nft of result.verification.nfts) {
           // Check if NFT has class attribute
@@ -1536,11 +1679,11 @@ app.post("/api/verification/session/:token/signature", async (req, res) => {
               eligibleSpecialRoles.push(specialRole);
             }
           }
-          
+
           // Check NFT attributes for special roles
           if (nft.content?.metadata?.attributes) {
             for (const attr of nft.content.metadata.attributes) {
-              if (attr.trait_type === 'Class' && attr.value) {
+              if (attr.trait_type === "Class" && attr.value) {
                 const specialRole = specialRolesMap.get(attr.value);
                 if (specialRole) {
                   eligibleSpecialRoles.push(specialRole);
@@ -1549,21 +1692,21 @@ app.post("/api/verification/session/:token/signature", async (req, res) => {
             }
           }
         }
-        
+
         specialRoles.push(...eligibleSpecialRoles.map((r) => r.roleName));
       }
 
-      const embed = new EmbedBuilder()
+      const embed = new EmbedBuilder();
       embed.setColor(result.verification.isVerified ? "#DA9C2F" : "#999999");
       embed.setTitle(
         result.verification.isVerified
           ? "✅ Verification Complete!"
-          : "⚠️ Verification Complete",
+          : "⚠️ Verification Complete"
       );
       embed.setDescription(
         result.verification.isVerified
           ? `Your wallet has been successfully verified!`
-          : `Your wallet has been verified, but you don't own any required NFTs yet.`,
+          : `Your wallet has been verified, but you don't own any required NFTs yet.`
       );
       embed.addFields(
         {
@@ -1578,10 +1721,9 @@ app.post("/api/verification/session/:token/signature", async (req, res) => {
         },
         {
           name: "Roles Assigned",
-          value:
-            assignedRoles.length > 0 ? assignedRoles.join(", ") : "None",
+          value: assignedRoles.length > 0 ? assignedRoles.join(", ") : "None",
           inline: true,
-        },
+        }
       );
       embed.setFooter({ text: "Realmkin Gatekeeper" });
       embed.setTimestamp();
@@ -1597,20 +1739,17 @@ app.post("/api/verification/session/:token/signature", async (req, res) => {
 
       await member.send({ embeds: [embed] });
       console.log(
-        `[verification] Sent verification embed to ${member.user.tag}`,
+        `[verification] Sent verification embed to ${member.user.tag}`
       );
     } catch (dmErr) {
-      console.warn(
-        "[verification] Could not send DM to user:",
-        dmErr.message,
-      );
+      console.warn("[verification] Could not send DM to user:", dmErr.message);
     }
 
     res.json(result);
   } catch (err) {
     console.error(
       "[verification] POST /api/verification/session/:token/signature error:",
-      err,
+      err
     );
     console.error("[verification] Error stack:", err.stack);
     if (err instanceof VerificationSessionError) {
@@ -1643,7 +1782,7 @@ app.post("/api/verification/auto", verifyFirebase, async (req, res) => {
       } catch (e) {
         console.warn(
           "[verification:auto] Failed to query user_links:",
-          e?.message || e,
+          e?.message || e
         );
       }
     }
@@ -1667,7 +1806,7 @@ app.post("/api/verification/auto", verifyFirebase, async (req, res) => {
       try {
         if (admin?.firestore) {
           const fs = admin.firestore();
-          
+
           // First try: look in wallets collection
           const qSnap = await fs
             .collection("wallets")
@@ -1677,22 +1816,31 @@ app.post("/api/verification/auto", verifyFirebase, async (req, res) => {
           if (!qSnap.empty) {
             // Document id is the wallet address in current schema
             walletAddress = qSnap.docs[0].id;
-            console.log("[verification:auto] Found wallet from wallets collection:", walletAddress);
+            console.log(
+              "[verification:auto] Found wallet from wallets collection:",
+              walletAddress
+            );
           }
-          
+
           // Second try: look in users collection
           if (!walletAddress) {
-            const userDoc = await fs.collection("users").doc(req.firebaseUid).get();
+            const userDoc = await fs
+              .collection("users")
+              .doc(req.firebaseUid)
+              .get();
             if (userDoc.exists && userDoc.data()?.walletAddress) {
               walletAddress = userDoc.data().walletAddress;
-              console.log("[verification:auto] Found wallet from users collection:", walletAddress);
+              console.log(
+                "[verification:auto] Found wallet from users collection:",
+                walletAddress
+              );
             }
           }
         }
       } catch (e) {
         console.warn(
           "[verification:auto] Firestore wallet lookup failed:",
-          e?.message || e,
+          e?.message || e
         );
       }
     }
@@ -1701,7 +1849,10 @@ app.post("/api/verification/auto", verifyFirebase, async (req, res) => {
     console.log("[verification:auto] ===== WALLET ADDRESS DEBUG =====");
     console.log("[verification:auto] Raw walletAddress:", walletAddress);
     console.log("[verification:auto] Type:", typeof walletAddress);
-    console.log("[verification:auto] Length:", walletAddress ? walletAddress.length : "null");
+    console.log(
+      "[verification:auto] Length:",
+      walletAddress ? walletAddress.length : "null"
+    );
     console.log("[verification:auto] Firebase UID:", req.firebaseUid);
     console.log("[verification:auto] ================================");
 
@@ -1717,62 +1868,96 @@ app.post("/api/verification/auto", verifyFirebase, async (req, res) => {
     try {
       new PublicKey(walletAddress);
     } catch (error) {
-      console.warn("[verification:auto] Invalid wallet address format, attempting recovery...");
-      
+      console.warn(
+        "[verification:auto] Invalid wallet address format, attempting recovery..."
+      );
+
       // Try to recover from Firestore - fetch the original case-sensitive address
       try {
         if (admin?.firestore) {
           const fs = admin.firestore();
           const walletLower = walletAddress.toLowerCase();
-          
+
           // Priority 1: Look in wallets collection
-          const walletDoc = await fs.collection("wallets").doc(walletLower).get();
+          const walletDoc = await fs
+            .collection("wallets")
+            .doc(walletLower)
+            .get();
           if (walletDoc.exists && walletDoc.data()?.walletAddress) {
             validatedWallet = walletDoc.data().walletAddress;
-            console.log("[verification:auto] Recovered wallet from wallets collection:", validatedWallet);
-          } 
+            console.log(
+              "[verification:auto] Recovered wallet from wallets collection:",
+              validatedWallet
+            );
+          }
           // Priority 2: Look in users collection
           else {
-            const userDoc = await fs.collection("users").doc(req.firebaseUid).get();
+            const userDoc = await fs
+              .collection("users")
+              .doc(req.firebaseUid)
+              .get();
             if (userDoc.exists && userDoc.data()?.walletAddress) {
               validatedWallet = userDoc.data().walletAddress;
-              console.log("[verification:auto] Recovered wallet from users collection:", validatedWallet);
+              console.log(
+                "[verification:auto] Recovered wallet from users collection:",
+                validatedWallet
+              );
             }
           }
-          
+
           // Priority 3: Look in userRewards collection
           if (validatedWallet === walletAddress) {
-            const userRewardsDoc = await fs.collection("userRewards").doc(req.firebaseUid).get();
+            const userRewardsDoc = await fs
+              .collection("userRewards")
+              .doc(req.firebaseUid)
+              .get();
             if (userRewardsDoc.exists && userRewardsDoc.data()?.walletAddress) {
               validatedWallet = userRewardsDoc.data().walletAddress;
-              console.log("[verification:auto] Recovered wallet from userRewards collection:", validatedWallet);
+              console.log(
+                "[verification:auto] Recovered wallet from userRewards collection:",
+                validatedWallet
+              );
             }
           }
-          
+
           // Priority 4: Look in userStats collection
           if (validatedWallet === walletAddress) {
-            const userStatsDoc = await fs.collection("userStats").doc(req.firebaseUid).get();
+            const userStatsDoc = await fs
+              .collection("userStats")
+              .doc(req.firebaseUid)
+              .get();
             if (userStatsDoc.exists && userStatsDoc.data()?.walletAddress) {
               validatedWallet = userStatsDoc.data().walletAddress;
-              console.log("[verification:auto] Recovered wallet from userStats collection:", validatedWallet);
+              console.log(
+                "[verification:auto] Recovered wallet from userStats collection:",
+                validatedWallet
+              );
             }
           }
         }
       } catch (e) {
-        console.warn("[verification:auto] Failed to recover wallet:", e?.message || e);
+        console.warn(
+          "[verification:auto] Failed to recover wallet:",
+          e?.message || e
+        );
       }
-      
+
       // Validate the recovered address
       try {
         new PublicKey(validatedWallet);
       } catch (error) {
-        console.error("[verification:auto] Could not recover valid wallet address:", error.message);
+        console.error(
+          "[verification:auto] Could not recover valid wallet address:",
+          error.message
+        );
         return res
           .status(400)
           .json({ error: "Invalid wallet address format - unable to recover" });
       }
-      
-      console.log("[verification:auto] Successfully recovered and validated wallet");
+
+      console.log(
+        "[verification:auto] Successfully recovered and validated wallet"
+      );
     }
 
     // Create session and immediately verify (use validated wallet in original case)
@@ -1790,7 +1975,7 @@ app.post("/api/verification/auto", verifyFirebase, async (req, res) => {
         walletAddress: validatedWallet, // Use validated wallet address in original case
         username,
         client,
-      },
+      }
     );
 
     console.log(
@@ -1799,7 +1984,7 @@ app.post("/api/verification/auto", verifyFirebase, async (req, res) => {
       "guild",
       guildId,
       "wallet",
-      validatedWallet,
+      validatedWallet
     );
 
     // Send invite link via DM if verification succeeded
@@ -1815,12 +2000,16 @@ app.post("/api/verification/auto", verifyFirebase, async (req, res) => {
         try {
           member = await guild.members.fetch(discordId);
         } catch (e) {
-          console.warn(`[verification:auto] User ${discordId} not in guild yet, waiting for them to join...`);
+          console.warn(
+            `[verification:auto] User ${discordId} not in guild yet, waiting for them to join...`
+          );
         }
 
         // If user not in guild, wait for them to join (up to 5 minutes)
         if (!member) {
-          console.log(`[verification:auto] Waiting for user ${discordId} to join guild ${guildId}...`);
+          console.log(
+            `[verification:auto] Waiting for user ${discordId} to join guild ${guildId}...`
+          );
           const maxWaitTime = 5 * 60 * 1000; // 5 minutes
           const checkInterval = 5 * 1000; // Check every 5 seconds
           const startTime = Date.now();
@@ -1828,19 +2017,26 @@ app.post("/api/verification/auto", verifyFirebase, async (req, res) => {
           while (Date.now() - startTime < maxWaitTime) {
             try {
               member = await guild.members.fetch(discordId);
-              console.log(`[verification:auto] User ${discordId} has joined the guild!`);
+              console.log(
+                `[verification:auto] User ${discordId} has joined the guild!`
+              );
               break;
             } catch (e) {
               // User hasn't joined yet, wait and retry
-              await new Promise(resolve => setTimeout(resolve, checkInterval));
+              await new Promise((resolve) =>
+                setTimeout(resolve, checkInterval)
+              );
             }
           }
 
           if (!member) {
-            console.warn(`[verification:auto] User ${discordId} did not join within 5 minutes, skipping DM`);
+            console.warn(
+              `[verification:auto] User ${discordId} did not join within 5 minutes, skipping DM`
+            );
             return res.status(200).json({
               success: true,
-              message: "Verification completed. User will receive DM once they join the server.",
+              message:
+                "Verification completed. User will receive DM once they join the server.",
             });
           }
         }
@@ -1856,9 +2052,10 @@ app.post("/api/verification/auto", verifyFirebase, async (req, res) => {
           ? assignedRoles.map((r) => `• ${r}`).join("\n")
           : "No roles assigned";
 
-        const shortWallet = (validatedWallet || "").length > 8
-          ? `${validatedWallet.slice(0, 4)}…${validatedWallet.slice(-4)}`
-          : validatedWallet || "unknown";
+        const shortWallet =
+          (validatedWallet || "").length > 8
+            ? `${validatedWallet.slice(0, 4)}…${validatedWallet.slice(-4)}`
+            : validatedWallet || "unknown";
 
         const embed = {
           color: verified ? 0x00ff00 : 0xffcc00,
@@ -1878,7 +2075,8 @@ app.post("/api/verification/auto", verifyFirebase, async (req, res) => {
             { name: "Roles Assigned", value: rolesValue, inline: false },
             {
               name: "Weekly Updates",
-              value: "Gatekeeper will update at the end of every mine week with increases in claimable amount, mining rate, and more.",
+              value:
+                "Gatekeeper will update at the end of every mine week with increases in claimable amount, mining rate, and more.",
               inline: false,
             },
           ],
@@ -1890,38 +2088,48 @@ app.post("/api/verification/auto", verifyFirebase, async (req, res) => {
 
         await user.send({ embeds: [embed] });
         console.log(`[verification:auto] Sent verification DM to ${user.tag}`);
-        
+
         // Immediately assign class-based roles if client is provided
         if (global.periodicVerificationService) {
           try {
             // Get contract rules for this guild
             let contractRules = [];
             try {
-              contractRules = await guildVerificationConfigStore.listByGuild(guildId);
+              contractRules = await guildVerificationConfigStore.listByGuild(
+                guildId
+              );
             } catch (error) {
-              console.warn(`[verification:auto] Failed to load contract rules for immediate role assignment:`, error.message);
+              console.warn(
+                `[verification:auto] Failed to load contract rules for immediate role assignment:`,
+                error.message
+              );
             }
-            
+
             // Update class-based roles immediately
             if (contractRules.length > 0) {
               await global.periodicVerificationService.updateClassBasedRoles(
-                member, 
-                result.verification.nfts, 
+                member,
+                result.verification.nfts,
                 username || session.username || discordId,
                 contractRules
               );
-              
-              console.log(`[verification:auto] Immediately assigned class-based roles for user ${discordId}`);
+
+              console.log(
+                `[verification:auto] Immediately assigned class-based roles for user ${discordId}`
+              );
             }
           } catch (roleError) {
-            console.error(`[verification:auto] Failed to assign roles immediately:`, roleError.message);
+            console.error(
+              `[verification:auto] Failed to assign roles immediately:`,
+              roleError.message
+            );
             // Don't throw - role assignment failure shouldn't block verification
           }
         }
       } catch (dmErr) {
         console.warn(
           "[verification:auto] Could not send invite DM:",
-          dmErr?.message || dmErr,
+          dmErr?.message || dmErr
         );
         // Fallback: post in welcome channel if configured
         try {
@@ -1930,17 +2138,17 @@ app.post("/api/verification/auto", verifyFirebase, async (req, res) => {
             const ch = await client.channels.fetch(channelId);
             if (ch && ch.isTextBased()) {
               await ch.send(
-                `<@${discordId}> ✅ Verification successful! If your DMs are disabled, enable them to receive bot messages.`,
+                `<@${discordId}> ✅ Verification successful! If your DMs are disabled, enable them to receive bot messages.`
               );
               console.log(
-                `[verification:auto] Posted fallback welcome in channel ${channelId}`,
+                `[verification:auto] Posted fallback welcome in channel ${channelId}`
               );
             }
           }
         } catch (fallbackErr) {
           console.warn(
             "[verification:auto] Fallback channel message failed:",
-            fallbackErr?.message || fallbackErr,
+            fallbackErr?.message || fallbackErr
           );
         }
       }

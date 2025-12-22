@@ -17,5 +17,6 @@ coverage/
 .cache/
 firebase-admin-*.json
 serviceAccount*.json
+firebase-service-account.json
 *.pem
 *.key
