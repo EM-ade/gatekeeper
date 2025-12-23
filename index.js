@@ -341,6 +341,10 @@ app.use(
 import stakingRoutes from "./routes/staking.js";
 app.use("/api/staking", stakingRoutes);
 
+// Import Goal Routes
+import goalRoutes from "./routes/goal.js";
+app.use("/api/goal", goalRoutes);
+
 // Health check
 app.get("/health", (_req, res) => res.json({ ok: true }));
 

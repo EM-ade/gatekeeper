@@ -129,9 +129,13 @@ class StakingService {
 
   /**
    * GET /overview
-   * Simplified: Fixed 30% APR with constant mining rate
+   * Simplified: Fixed 30% ROI with reward gating based on goal completion
    */
   async getOverview(firebaseUid) {
+    // Check if goal is completed (for reward gating)
+    const { goalService } = await import("./goalService.js");
+    const isGoalCompleted = await goalService.isGoalCompleted();
+
     const pool = await this.getPoolData();
 
     let userPos = null;
@@ -154,7 +158,12 @@ class StakingService {
 
         // Calculate pending with 30% FLAT ROI (token-value-based)
         // Checkpoint-based calculation (Fixes "Instant Rewards" bug)
-        if (userPos.updated_at && userPos.principal_amount > 0) {
+        // REWARD GATING: Only calculate rewards if goal is completed
+        if (
+          userPos.updated_at &&
+          userPos.principal_amount > 0 &&
+          isGoalCompleted
+        ) {
           const now = Date.now();
           const lastUpdateMs = userPos.updated_at.toMillis();
           const elapsedSeconds = (now - lastUpdateMs) / 1000;
@@ -208,6 +217,7 @@ class StakingService {
     }
 
     // Calculate user's mining rate (30% ROI based on token value)
+    // REWARD GATING: Only show mining rate if goal is completed
     const SECONDS_IN_YEAR = 365 * 24 * 60 * 60;
     const ROI_PERCENT = 0.3; // 30% per year
     const FIXED_APR = 30; // Display as 30% APR
@@ -215,7 +225,7 @@ class StakingService {
     let baseMiningRate = 0;
     let totalMiningRate = 0;
 
-    if (userPos?.principal_amount > 0) {
+    if (userPos?.principal_amount > 0 && isGoalCompleted) {
       // Fetch current MKIN/SOL price
       const { getMkinPriceSOL } = await import("../utils/mkinPrice.js");
       const tokenPriceSol = await getMkinPriceSOL();
@@ -265,6 +275,7 @@ class StakingService {
         stakingWalletAddress: process.env.STAKING_WALLET_ADDRESS,
         roiPercent: ROI_PERCENT,
         fixedApr: FIXED_APR,
+        isRewardsPaused: !isGoalCompleted, // Rewards are paused until goal is completed
       },
       timestamp: Date.now(),
     };
