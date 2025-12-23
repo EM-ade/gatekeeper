@@ -1,6 +1,6 @@
 /**
  * MKIN Token Price Fetching
- * 
+ *
  * Gets the current MKIN/SOL and MKIN/USD prices
  */
 
@@ -15,7 +15,7 @@ let priceCache = {
 /**
  * Fetch MKIN price from Jupiter (Solana DEX aggregator)
  * This is the most accurate for Solana tokens
- * 
+ *
  * NOTE: Jupiter only works for:
  * - Verified tokens on mainnet
  * - Tokens with active DEX pairs
@@ -23,7 +23,7 @@ let priceCache = {
 async function fetchMkinPriceFromJupiter() {
   try {
     // Check if we're on devnet or if token is unverified
-    const isDevnet = process.env.SOLANA_RPC_URL?.includes('devnet');
+    const isDevnet = process.env.SOLANA_RPC_URL?.includes("devnet");
     if (isDevnet) {
       console.log("⚠️ On devnet - Jupiter price not available");
       return null;
@@ -34,23 +34,25 @@ async function fetchMkinPriceFromJupiter() {
       console.warn("⚠️ MKIN_TOKEN_MINT not configured");
       return null;
     }
-    
+
     const response = await fetch(
       `https://price.jup.ag/v4/price?ids=${tokenMint}`,
       { timeout: 5000 }
     );
-    
+
     if (!response.ok) {
       throw new Error(`Jupiter API error: ${response.status}`);
     }
-    
+
     const data = await response.json();
     const price = data.data?.[tokenMint]?.price;
-    
+
     if (!price || isNaN(price)) {
-      throw new Error("Token not found on Jupiter (likely unverified or no liquidity)");
+      throw new Error(
+        "Token not found on Jupiter (likely unverified or no liquidity)"
+      );
     }
-    
+
     console.log(`✅ Jupiter MKIN price: $${price}`);
     return { usd: price };
   } catch (error) {
@@ -75,7 +77,7 @@ async function fetchMkinSolPairPrice() {
 
 /**
  * Get MKIN price in USD
- * 
+ *
  * Priority:
  * 1. Manual configuration (MKIN_PRICE_USD env var)
  * 2. Jupiter API (mainnet verified tokens only)
@@ -84,7 +86,7 @@ async function fetchMkinSolPairPrice() {
 export async function getMkinPriceUSD() {
   // Check cache first
   const now = Date.now();
-  if (priceCache.mkinUsd && (now - priceCache.timestamp) < priceCache.ttl) {
+  if (priceCache.mkinUsd && now - priceCache.timestamp < priceCache.ttl) {
     console.log(`📦 Using cached MKIN price: $${priceCache.mkinUsd}`);
     return priceCache.mkinUsd;
   }
@@ -131,16 +133,20 @@ export async function getMkinPriceUSD() {
 export async function getMkinPriceSOL() {
   try {
     const { getSolPriceUSD } = await import("./solPrice.js");
-    
+
     const [mkinUsd, solUsd] = await Promise.all([
       getMkinPriceUSD(),
-      getSolPriceUSD()
+      getSolPriceUSD(),
     ]);
-    
+
     const mkinSol = mkinUsd / solUsd;
-    
-    console.log(`💱 MKIN price: $${mkinUsd} | SOL price: $${solUsd} | MKIN/SOL: ${mkinSol.toFixed(6)}`);
-    
+
+    console.log(
+      `💱 MKIN price: $${mkinUsd} | SOL price: $${solUsd} | MKIN/SOL: ${mkinSol.toFixed(
+        6
+      )}`
+    );
+
     return mkinSol;
   } catch (error) {
     console.error("Error calculating MKIN/SOL price:", error);
@@ -159,11 +165,11 @@ export async function calculateStakingFee(mkinAmount, feePercent = 5) {
   const feeInMkin = mkinAmount * (feePercent / 100);
   const mkinSolPrice = await getMkinPriceSOL();
   const feeInSol = feeInMkin * mkinSolPrice;
-  
+
   const mkinUsd = await getMkinPriceUSD();
   const { getSolPriceUSD } = await import("./solPrice.js");
   const solUsd = await getSolPriceUSD();
-  
+
   console.log(`💰 Staking fee calculation:`);
   console.log(`   Amount: ${mkinAmount} MKIN`);
   console.log(`   Fee %: ${feePercent}%`);
@@ -171,7 +177,7 @@ export async function calculateStakingFee(mkinAmount, feePercent = 5) {
   console.log(`   Fee (SOL): ${feeInSol.toFixed(6)} SOL`);
   console.log(`   MKIN price: $${mkinUsd}`);
   console.log(`   SOL price: $${solUsd}`);
-  
+
   return {
     feeInMkin,
     feeInSol,

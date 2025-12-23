@@ -1,5 +1,11 @@
 import admin from "firebase-admin";
-import { Connection, PublicKey, Transaction, Keypair, SystemProgram } from "@solana/web3.js";
+import {
+  Connection,
+  PublicKey,
+  Transaction,
+  Keypair,
+  SystemProgram,
+} from "@solana/web3.js";
 import {
   getAssociatedTokenAddress,
   createTransferInstruction,
@@ -135,7 +141,7 @@ class StakingService {
    */
   async getOverview(firebaseUid) {
     const pool = await this.getPoolData();
-    
+
     let userPos = null;
     let pending = 0;
     let mkinBalance = 0;
@@ -153,37 +159,43 @@ class StakingService {
 
       if (posDoc.exists) {
         userPos = posDoc.data();
-        
+
         // Calculate pending with FIXED MINING RATE (not APR-based)
         // Base rate: 0.00000000066 SOL/second per MKIN staked
-        if (userPos.stake_start_time && userPos.principal_amount > 0) {
+        // Checkpoint-based calculation (Fixes "Instant Rewards" bug)
+        if (userPos.updated_at && userPos.principal_amount > 0) {
           const now = Date.now();
-          const stakeStartMs = userPos.stake_start_time.toMillis();
-          const elapsedSeconds = (now - stakeStartMs) / 1000;
-          
-          // Fixed base mining rate per MKIN per second (achieves 30% APR)
-          const BASE_RATE_PER_MKIN = 0.000000009512937595; // SOL/second per MKIN
-          
-          // Total accrued = principal × elapsed × base_rate
-          const baseAccrued = userPos.principal_amount * elapsedSeconds * BASE_RATE_PER_MKIN;
-          
-          // Apply booster multiplier if any
-          const boosterMultiplier = this._getBoosterMultiplier(userPos.active_boosters || []);
-          const totalAccruedWithBooster = baseAccrued * boosterMultiplier;
-          
-          // Pending = total accrued - already claimed
-          pending = Math.max(0, totalAccruedWithBooster - (userPos.total_claimed_sol || 0));
-          
-          console.log(`⛏️ Fixed mining rate calculation:`);
-          console.log(`   Principal: ${userPos.principal_amount.toLocaleString()} MKIN`);
-          console.log(`   Elapsed: ${(elapsedSeconds / 86400).toFixed(2)} days (${elapsedSeconds.toFixed(0)}s)`);
-          console.log(`   Base rate: ${BASE_RATE_PER_MKIN} SOL/s per MKIN`);
-          console.log(`   Your rate: ${(userPos.principal_amount * BASE_RATE_PER_MKIN).toFixed(12)} SOL/s`);
-          console.log(`   Base accrued: ${baseAccrued.toFixed(12)} SOL`);
-          console.log(`   Booster multiplier: ${boosterMultiplier}x`);
-          console.log(`   Accrued with booster: ${totalAccruedWithBooster.toFixed(12)} SOL`);
-          console.log(`   Already claimed: ${(userPos.total_claimed_sol || 0).toFixed(12)} SOL`);
-          console.log(`   Pending: ${pending.toFixed(12)} SOL`);
+          const lastUpdateMs = userPos.updated_at.toMillis();
+          const elapsedSeconds = (now - lastUpdateMs) / 1000;
+
+          // Fixed base mining rate per MKIN per second (matches spec)
+          const BASE_RATE_PER_MKIN = 0.000000000000025; // 2.5e-14 SOL/second per MKIN
+
+          // rewards = principal * elapsed * rate
+          const accruedSinceLastUpdate =
+            userPos.principal_amount * elapsedSeconds * BASE_RATE_PER_MKIN;
+
+          // Apply booster multiplier
+          const boosterMultiplier = this._getBoosterMultiplier(
+            userPos.active_boosters || []
+          );
+          const accruedWithBooster = accruedSinceLastUpdate * boosterMultiplier;
+
+          // Total Pending = Stored Pending (Checkpoint) + Accrued Since Checkpoint
+          pending = (userPos.pending_rewards || 0) + accruedWithBooster;
+
+          console.log(`⛏️ Realtime mining calculation:`);
+          console.log(
+            `   Principal: ${userPos.principal_amount.toLocaleString()} MKIN`
+          );
+          console.log(`   Time since update: ${elapsedSeconds.toFixed(0)}s`);
+          console.log(
+            `   Stored Pending: ${(userPos.pending_rewards || 0).toFixed(
+              9
+            )} SOL`
+          );
+          console.log(`   Accrued (New): ${accruedWithBooster.toFixed(9)} SOL`);
+          console.log(`   Total Pending: ${pending.toFixed(9)} SOL`);
         } else {
           pending = 0;
         }
@@ -195,20 +207,22 @@ class StakingService {
     }
 
     // Calculate user's mining rate (FIXED rate per MKIN)
-    const BASE_RATE_PER_MKIN = 0.000000009512937595; // SOL/second per MKIN (achieves 30% APR)
+    const BASE_RATE_PER_MKIN = 0.000000000000025; // 2.5e-14 SOL/second per MKIN (Matches spec)
     const FIXED_APR = 30; // 30% per year
-    
+
     let baseMiningRate = 0;
     let totalMiningRate = 0;
-    
+
     if (userPos?.principal_amount > 0) {
       // Base rate = principal × base_rate_per_mkin
       baseMiningRate = userPos.principal_amount * BASE_RATE_PER_MKIN;
-      
+
       // Apply booster multiplier
-      const boosterMultiplier = this._getBoosterMultiplier(userPos.active_boosters || []);
+      const boosterMultiplier = this._getBoosterMultiplier(
+        userPos.active_boosters || []
+      );
       totalMiningRate = baseMiningRate * boosterMultiplier;
-      
+
       console.log(`⛏️ User mining rate:`);
       console.log(`   Base: ${baseMiningRate.toFixed(12)} SOL/s`);
       console.log(`   Booster: ${boosterMultiplier}x`);
@@ -227,7 +241,9 @@ class StakingService {
         baseMiningRate: baseMiningRate, // Base SOL/s without boosters
         totalMiningRate: totalMiningRate, // Total SOL/s with boosters
         activeBoosters: userPos?.active_boosters || [],
-        boosterMultiplier: this._getBoosterMultiplier(userPos?.active_boosters || []),
+        boosterMultiplier: this._getBoosterMultiplier(
+          userPos?.active_boosters || []
+        ),
         stakeStartTime: userPos?.stake_start_time?.toMillis() || null,
         lastStakeTime: userPos?.last_stake_time?.toMillis() || null,
         totalClaimedSol: userPos?.total_claimed_sol || 0,
@@ -249,8 +265,10 @@ class StakingService {
    */
   async stake(firebaseUid, amount, txSignature, feeSignature) {
     if (amount <= 0) throw new StakingError("Invalid amount");
-    if (!txSignature) throw new StakingError("Token transaction signature required");
-    if (!feeSignature) throw new StakingError("Fee transaction signature required");
+    if (!txSignature)
+      throw new StakingError("Token transaction signature required");
+    if (!feeSignature)
+      throw new StakingError("Fee transaction signature required");
 
     // Get user's wallet address from Firestore
     const userRewardDoc = await this.db
@@ -265,19 +283,29 @@ class StakingService {
     // 1. Calculate 5% entry fee in SOL
     const { calculateStakingFee } = await import("../utils/mkinPrice.js");
     const feeData = await calculateStakingFee(amount, 5);
-    console.log(`💰 Entry fee for ${amount} MKIN: ${feeData.feeInSol.toFixed(6)} SOL (${feeData.feeInMkin} MKIN value)`);
+    console.log(
+      `💰 Entry fee for ${amount} MKIN: ${feeData.feeInSol.toFixed(6)} SOL (${
+        feeData.feeInMkin
+      } MKIN value)`
+    );
 
     // 2. Verify fee payment (5% in SOL)
     // Allow 1% tolerance for rounding/timing differences between frontend and backend
     const tolerance = 0.01; // 1%
     const minFee = feeData.feeInSol * (1 - tolerance);
     const maxFee = feeData.feeInSol * (1 + tolerance);
-    
+
     console.log(`🔍 Verifying fee payment:`);
     console.log(`   Expected: ${feeData.feeInSol.toFixed(6)} SOL`);
-    console.log(`   Acceptable range: ${minFee.toFixed(6)} - ${maxFee.toFixed(6)} SOL`);
-    
-    const isValidFee = await this._verifySolTransfer(feeSignature, minFee, maxFee);
+    console.log(
+      `   Acceptable range: ${minFee.toFixed(6)} - ${maxFee.toFixed(6)} SOL`
+    );
+
+    const isValidFee = await this._verifySolTransfer(
+      feeSignature,
+      minFee,
+      maxFee
+    );
     if (!isValidFee) {
       console.error(`❌ Fee verification failed!`);
       throw new StakingError("Invalid staking fee payment");
@@ -349,8 +377,15 @@ class StakingService {
       }
 
       // 🚀 ADD ENTRY FEE TO REWARD POOL (Self-Sustaining Pool Growth!)
-      poolData.reward_pool_sol = (poolData.reward_pool_sol || 0) + feeData.feeInSol;
-      console.log(`💰 Added ${feeData.feeInSol.toFixed(6)} SOL entry fee to reward pool. New pool: ${poolData.reward_pool_sol.toFixed(4)} SOL`);
+      poolData.reward_pool_sol =
+        (poolData.reward_pool_sol || 0) + feeData.feeInSol;
+      console.log(
+        `💰 Added ${feeData.feeInSol.toFixed(
+          6
+        )} SOL entry fee to reward pool. New pool: ${poolData.reward_pool_sol.toFixed(
+          4
+        )} SOL`
+      );
 
       // Update Principal & Debt (FULL amount, no deduction)
       posData.principal_amount += amount; // Full stake amount!
@@ -365,10 +400,12 @@ class StakingService {
 
       // Update Pool Totals (FULL amount)
       poolData.total_staked += amount;
-      
+
       // Track total entry fees paid by user
-      posData.total_entry_fees_sol = (posData.total_entry_fees_sol || 0) + feeData.feeInSol;
-      posData.total_entry_fees_mkin_value = (posData.total_entry_fees_mkin_value || 0) + feeData.feeInMkin;
+      posData.total_entry_fees_sol =
+        (posData.total_entry_fees_sol || 0) + feeData.feeInSol;
+      posData.total_entry_fees_mkin_value =
+        (posData.total_entry_fees_mkin_value || 0) + feeData.feeInMkin;
 
       // Writes
       t.set(poolRef, poolData);
@@ -394,11 +431,11 @@ class StakingService {
       });
     });
 
-    return { 
+    return {
       success: true,
       amount,
       timestamp: new Date().toISOString(),
-      txSignature
+      txSignature,
     };
   }
 
@@ -412,15 +449,27 @@ class StakingService {
 
     // 1. Calculate dynamic fee based on current SOL price
     const { getFeeInSol } = await import("../utils/solPrice.js");
-    const { solAmount: feeAmount, usdAmount, solPrice } = await getFeeInSol(2.0); // $2 USD
+    const {
+      solAmount: feeAmount,
+      usdAmount,
+      solPrice,
+    } = await getFeeInSol(2.0); // $2 USD
 
-    console.log(`💵 Claim fee: $${usdAmount} = ${feeAmount.toFixed(4)} SOL (SOL price: $${solPrice})`);
+    console.log(
+      `💵 Claim fee: $${usdAmount} = ${feeAmount.toFixed(
+        4
+      )} SOL (SOL price: $${solPrice})`
+    );
 
     // 2. Verify SOL Fee payment (with 1% tolerance)
     const tolerance = 0.01;
     const minFee = feeAmount * (1 - tolerance);
     const maxFee = feeAmount * (1 + tolerance);
-    const isValidFee = await this._verifySolTransfer(txSignature, minFee, maxFee);
+    const isValidFee = await this._verifySolTransfer(
+      txSignature,
+      minFee,
+      maxFee
+    );
     if (!isValidFee) throw new StakingError("Invalid Fee Transaction");
 
     let rewardAmount = 0;
@@ -443,7 +492,13 @@ class StakingService {
 
       // 🚀 ADD FEE TO REWARD POOL (Self-Sustaining Pool)
       poolData.reward_pool_sol = (poolData.reward_pool_sol || 0) + feeAmount;
-      console.log(`💰 Added ${feeAmount.toFixed(4)} SOL fee to reward pool. New pool: ${poolData.reward_pool_sol.toFixed(4)} SOL`);
+      console.log(
+        `💰 Added ${feeAmount.toFixed(
+          4
+        )} SOL fee to reward pool. New pool: ${poolData.reward_pool_sol.toFixed(
+          4
+        )} SOL`
+      );
 
       // Calc Pending
       const accrued =
@@ -493,7 +548,10 @@ class StakingService {
     // We will initiate the transfer here.
     let payoutSignature = null;
     try {
-      payoutSignature = await this._sendSolFromTreasury(firebaseUid, rewardAmount);
+      payoutSignature = await this._sendSolFromTreasury(
+        firebaseUid,
+        rewardAmount
+      );
       console.log(`✅ Claim payout successful! Signature: ${payoutSignature}`);
     } catch (e) {
       console.error("Failed to payout SOL:", e);
@@ -502,12 +560,12 @@ class StakingService {
       throw new StakingError("Payout failed. Please contact support.");
     }
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       amount: rewardAmount,
       payoutSignature,
       feeSignature: txSignature,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -533,15 +591,27 @@ class StakingService {
 
     // 1. Calculate dynamic fee based on current SOL price
     const { getFeeInSol } = await import("../utils/solPrice.js");
-    const { solAmount: feeAmount, usdAmount, solPrice } = await getFeeInSol(2.0); // $2 USD
+    const {
+      solAmount: feeAmount,
+      usdAmount,
+      solPrice,
+    } = await getFeeInSol(2.0); // $2 USD
 
-    console.log(`💵 Unstake fee: $${usdAmount} = ${feeAmount.toFixed(4)} SOL (SOL price: $${solPrice})`);
+    console.log(
+      `💵 Unstake fee: $${usdAmount} = ${feeAmount.toFixed(
+        4
+      )} SOL (SOL price: $${solPrice})`
+    );
 
     // 2. Verify SOL Fee payment (with 1% tolerance)
     const tolerance = 0.01;
     const minFee = feeAmount * (1 - tolerance);
     const maxFee = feeAmount * (1 + tolerance);
-    const isValidFee = await this._verifySolTransfer(txSignature, minFee, maxFee);
+    const isValidFee = await this._verifySolTransfer(
+      txSignature,
+      minFee,
+      maxFee
+    );
     if (!isValidFee) throw new StakingError("Invalid Fee Transaction");
 
     await this.db.runTransaction(async (t) => {
@@ -567,7 +637,13 @@ class StakingService {
 
       // 🚀 ADD FEE TO REWARD POOL (Self-Sustaining Pool)
       poolData.reward_pool_sol = (poolData.reward_pool_sol || 0) + feeAmount;
-      console.log(`💰 Added ${feeAmount.toFixed(4)} SOL fee to reward pool. New pool: ${poolData.reward_pool_sol.toFixed(4)} SOL`);
+      console.log(
+        `💰 Added ${feeAmount.toFixed(
+          4
+        )} SOL fee to reward pool. New pool: ${poolData.reward_pool_sol.toFixed(
+          4
+        )} SOL`
+      );
 
       // 2. Harvest Pending Rewards
       const accrued =
@@ -607,18 +683,20 @@ class StakingService {
     let tokenSignature = null;
     try {
       tokenSignature = await this._sendTokensFromVault(userWallet, amount);
-      console.log(`✅ Unstake token transfer successful! Signature: ${tokenSignature}`);
+      console.log(
+        `✅ Unstake token transfer successful! Signature: ${tokenSignature}`
+      );
     } catch (e) {
       console.error("Failed to send tokens from vault:", e);
       throw new StakingError("Token transfer failed. Please contact support.");
     }
 
-    return { 
+    return {
       success: true,
       tokenSignature,
       feeSignature: txSignature,
       amount,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -628,8 +706,10 @@ class StakingService {
    */
   async _verifyTokenTransfer(signature, expectedAmount, userWallet) {
     try {
-      console.log(`🔍 Verifying token transfer: signature=${signature}, amount=${expectedAmount}, user=${userWallet}`);
-      
+      console.log(
+        `🔍 Verifying token transfer: signature=${signature}, amount=${expectedAmount}, user=${userWallet}`
+      );
+
       const tx = await this.connection.getParsedTransaction(signature, {
         commitment: "confirmed",
         maxSupportedTransactionVersion: 0,
@@ -646,11 +726,13 @@ class StakingService {
       }
 
       // Get token mint based on network (match frontend logic)
-      const isDevnet = process.env.SOLANA_RPC_URL?.includes('devnet');
+      const isDevnet = process.env.SOLANA_RPC_URL?.includes("devnet");
       const tokenMint = new PublicKey(
         isDevnet
-          ? (process.env.MKIN_TOKEN_MINT_DEVNET || "CARXmxarjsCwvzpmjVB2x4xkAo8fMgsAVUBPREoUGyZm")
-          : (process.env.MKIN_TOKEN_MINT || "BKDGf6DnDHK87GsZpdWXyBqiNdcNb6KnoFcYbWPUhJLA")
+          ? process.env.MKIN_TOKEN_MINT_DEVNET ||
+            "CARXmxarjsCwvzpmjVB2x4xkAo8fMgsAVUBPREoUGyZm"
+          : process.env.MKIN_TOKEN_MINT ||
+            "BKDGf6DnDHK87GsZpdWXyBqiNdcNb6KnoFcYbWPUhJLA"
       );
       const vaultAddress = new PublicKey(process.env.STAKING_WALLET_ADDRESS);
 
@@ -669,12 +751,16 @@ class StakingService {
 
       // Parse instructions to find token transfer
       const instructions = tx.transaction.message.instructions;
-      console.log(`📝 Found ${instructions.length} instructions in transaction`);
+      console.log(
+        `📝 Found ${instructions.length} instructions in transaction`
+      );
 
       for (let i = 0; i < instructions.length; i++) {
         const ix = instructions[i];
-        console.log(`  Instruction ${i}: program=${ix.program}, type=${ix.parsed?.type}`);
-        
+        console.log(
+          `  Instruction ${i}: program=${ix.program}, type=${ix.parsed?.type}`
+        );
+
         // Check for SPL Token transfer instruction
         if (ix.program === "spl-token" && ix.parsed?.type === "transfer") {
           const info = ix.parsed.info;
@@ -693,9 +779,15 @@ class StakingService {
           const destMatches = info.destination === vaultATA.toBase58();
 
           console.log(`    Verification:`);
-          console.log(`      Source matches: ${sourceMatches} (expected: ${userATA.toBase58()})`);
-          console.log(`      Dest matches: ${destMatches} (expected: ${vaultATA.toBase58()})`);
-          console.log(`      Amount matches: ${amountMatches} (${info.amount} >= ${expectedRawAmount} [${expectedAmount} MKIN * 1e9])`);
+          console.log(
+            `      Source matches: ${sourceMatches} (expected: ${userATA.toBase58()})`
+          );
+          console.log(
+            `      Dest matches: ${destMatches} (expected: ${vaultATA.toBase58()})`
+          );
+          console.log(
+            `      Amount matches: ${amountMatches} (${info.amount} >= ${expectedRawAmount} [${expectedAmount} MKIN * 1e9])`
+          );
 
           if (sourceMatches && destMatches && amountMatches) {
             console.log(
@@ -707,7 +799,9 @@ class StakingService {
       }
 
       console.error("❌ No valid token transfer found in transaction");
-      console.error("   Expected: user ATA -> vault ATA with sufficient amount");
+      console.error(
+        "   Expected: user ATA -> vault ATA with sufficient amount"
+      );
       return false;
     } catch (e) {
       console.error("❌ Token transfer verification error:", e);
@@ -725,11 +819,13 @@ class StakingService {
       if (!vaultPrivateKey) throw new Error("STAKING_PRIVATE_KEY not set");
 
       // Get token mint based on network (match frontend logic)
-      const isDevnet = process.env.SOLANA_RPC_URL?.includes('devnet');
+      const isDevnet = process.env.SOLANA_RPC_URL?.includes("devnet");
       const tokenMint = new PublicKey(
         isDevnet
-          ? (process.env.MKIN_TOKEN_MINT_DEVNET || "CARXmxarjsCwvzpmjVB2x4xkAo8fMgsAVUBPREoUGyZm")
-          : (process.env.MKIN_TOKEN_MINT || "BKDGf6DnDHK87GsZpdWXyBqiNdcNb6KnoFcYbWPUhJLA")
+          ? process.env.MKIN_TOKEN_MINT_DEVNET ||
+            "CARXmxarjsCwvzpmjVB2x4xkAo8fMgsAVUBPREoUGyZm"
+          : process.env.MKIN_TOKEN_MINT ||
+            "BKDGf6DnDHK87GsZpdWXyBqiNdcNb6KnoFcYbWPUhJLA"
       );
 
       // Decode vault keypair
@@ -799,39 +895,49 @@ class StakingService {
       // Look for SystemProgram.transfer to stakingAddr
       const instructions = tx.transaction.message.instructions;
       console.log(`📋 Transaction has ${instructions.length} instructions`);
-      
+
       for (let i = 0; i < instructions.length; i++) {
         const ix = instructions[i];
-        console.log(`  Instruction ${i}: program=${ix.program}, type=${ix.parsed?.type}`);
-        
+        console.log(
+          `  Instruction ${i}: program=${ix.program}, type=${ix.parsed?.type}`
+        );
+
         if (ix.program === "system" && ix.parsed?.type === "transfer") {
           const info = ix.parsed.info;
           const lamports = info.lamports;
           const solAmount = lamports / 1e9;
-          
+
           console.log(`    Transfer found:`);
           console.log(`      From: ${info.source}`);
           console.log(`      To: ${info.destination}`);
-          console.log(`      Amount: ${solAmount.toFixed(9)} SOL (${lamports} lamports)`);
-          console.log(`      Expected range: ${minAmountSol.toFixed(9)} - ${maxAmountSol.toFixed(9)} SOL`);
-          
+          console.log(
+            `      Amount: ${solAmount.toFixed(9)} SOL (${lamports} lamports)`
+          );
+          console.log(
+            `      Expected range: ${minAmountSol.toFixed(
+              9
+            )} - ${maxAmountSol.toFixed(9)} SOL`
+          );
+
           if (info.destination === stakingAddr) {
             // Use maxAmountSol if no minAmountSol provided (backward compatibility)
             const min = minAmountSol || maxAmountSol;
             const max = maxAmountSol || minAmountSol;
-            
+
             if (solAmount >= min && solAmount <= max) {
               console.log(`✅ Fee payment verified!`);
               return true;
             } else {
-              console.error(`❌ Amount out of range: ${solAmount} not in [${min}, ${max}]`);
+              console.error(
+                `❌ Amount out of range: ${solAmount} not in [${min}, ${max}]`
+              );
             }
           } else {
             console.log(`    ❌ Wrong destination (expected: ${stakingAddr})`);
           }
         }
       }
-      
+
       console.error("❌ No valid fee transfer found in transaction");
       return false;
     } catch (e) {
@@ -864,7 +970,7 @@ class StakingService {
       // Create SOL transfer transaction
       const { Transaction, SystemProgram } = await import("@solana/web3.js");
       const userPubkey = new PublicKey(userWalletAddr);
-      
+
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: vaultKeypair.publicKey,
@@ -898,12 +1004,12 @@ class StakingService {
   /**
    * Helper: Calculate Booster Multiplier
    * Boosters increase mining rate above base rate
-   * 
+   *
    * Tiers:
    * - Realmkin 1/1 (lowest): 1.25x (25% increase)
    * - Customized 1/1 (mid-tier): 1.5x (50% increase)
    * - Realmkin Miner (top-tier): 2.0x (100% increase)
-   * 
+   *
    * @param {Array} activeBoosters - Array of booster objects with type field
    * @returns {number} Total multiplier (1.0 = no boost)
    */
@@ -914,19 +1020,19 @@ class StakingService {
 
     // Find the highest tier booster (only one booster can be active at a time)
     let maxMultiplier = 1.0;
-    
+
     for (const booster of activeBoosters) {
-      const type = booster.type?.toLowerCase() || '';
-      
-      if (type.includes('realmkin_miner') || type.includes('miner')) {
+      const type = booster.type?.toLowerCase() || "";
+
+      if (type.includes("realmkin_miner") || type.includes("miner")) {
         maxMultiplier = Math.max(maxMultiplier, 2.0); // Top tier
-      } else if (type.includes('customized') || type.includes('custom')) {
+      } else if (type.includes("customized") || type.includes("custom")) {
         maxMultiplier = Math.max(maxMultiplier, 1.5); // Mid tier
-      } else if (type.includes('realmkin') || type.includes('1/1')) {
+      } else if (type.includes("realmkin") || type.includes("1/1")) {
         maxMultiplier = Math.max(maxMultiplier, 1.25); // Lowest tier
       }
     }
-    
+
     return maxMultiplier;
   }
 }
