@@ -14,9 +14,6 @@ dotenv.config();
 // Initialize Firebase Admin
 if (!admin.apps.length) {
   try {
-    let svcJson = null;
-    const rawEnv = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-
     if (rawEnv) {
       let content = rawEnv.replace(/^\uFEFF/, "").trim();
 
@@ -31,9 +28,15 @@ if (!admin.apps.length) {
         const fileStr = fs.readFileSync(content, "utf8").replace(/^\uFEFF/, "");
         svcJson = JSON.parse(fileStr);
       }
+    } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+      svcJson = JSON.parse(fs.readFileSync(credPath, "utf8"));
     }
 
     if (svcJson) {
+      if (svcJson.private_key && typeof svcJson.private_key === "string") {
+        svcJson.private_key = svcJson.private_key.replace(/\\n/g, "\n");
+      }
       admin.initializeApp({
         credential: admin.credential.cert(svcJson),
       });
