@@ -77,13 +77,11 @@ class StakingService {
   }
 
   /**
-   * Helper: Update Pool (MasterChef Logic)
-   * Updates acc_reward_per_share based on time passed and rewards available.
-   * NOTE: In a real "Pool" where rewards drip, we need a "Reward Rate".
-   * The prompt says: "DailyReward = SOLPool / 365".
-   * So Reward per second = (SOLPool / 365) / 86400.
+   * Helper: Update Pool State with 30% Flat ROI Logic
+   * Calculates rewards based on: (totalStaked * 30% * tokenPrice * timeDiff) / SECONDS_IN_YEAR
+   * This ensures users earn 30% of their staked token value per year, paid in SOL.
    */
-  _calculateNewPoolState(poolData) {
+  async _calculateNewPoolState(poolData) {
     const now = admin.firestore.Timestamp.now();
     const lastTime = poolData.last_reward_time || now;
     const timeDiffSeconds = now.seconds - lastTime.seconds;
@@ -96,40 +94,34 @@ class StakingService {
       return { ...poolData, last_reward_time: now, updated_at: now };
     }
 
-    // Reward Logic: 1/365th of the pool is distributed daily.
-    // Rate per second = Pool / (365 * 24 * 60 * 60) = Pool / 31,536,000
-    // Rewards for this period = Pool * (1 - (1 - 1/31536000)^timeDiff) ?
-    // Simplified Linear Approximation for small intervals:
-    // Rewards = (Pool * timeDiff) / 31,536,000
-    // Note: As rewards are distributed, the Pool size technically decreases (if we view Pool as "Unclaimed Rewards").
-    // But usually "Reward Pool" is a separate reserve.
-    // If "SOLPool" means "The balance in the treasury meant for rewards", then yes.
-
+    // NEW: 30% Flat ROI Logic
+    // Reward = (Staked Tokens * 30% * Token/SOL Price * Time) / Year
     const SECONDS_IN_YEAR = 365 * 24 * 60 * 60;
+    const ROI_PERCENT = 0.3; // 30% per year
+
+    // Fetch current MKIN/SOL price
+    const { getMkinPriceSOL } = await import("../utils/mkinPrice.js");
+    const tokenPriceSol = await getMkinPriceSOL();
+
+    console.log(
+      `💰 Pool update: ${poolData.total_staked.toLocaleString()} MKIN staked, price: ${tokenPriceSol.toFixed(
+        6
+      )} SOL/MKIN`
+    );
+
+    // Calculate rewards to emit for this time period
     const rewardsToEmit =
-      (poolData.reward_pool_sol * timeDiffSeconds) / SECONDS_IN_YEAR;
+      (poolData.total_staked * ROI_PERCENT * tokenPriceSol * timeDiffSeconds) /
+      SECONDS_IN_YEAR;
 
-    // acc_reward_per_share += rewards / stake
-    // We use a multiplier (e.g. 1e12) to keep precision if using standard numbers,
-    // but here we are dealing with SOL (9 decimals).
-    // Let's stick to standard `number` (float) for this MVP, but round carefully.
-
-    const rewardPerShareIncrease = rewardsToEmit / poolData.total_staked;
-    const newAccRewardPerShare =
-      (poolData.acc_reward_per_share || 0) + rewardPerShareIncrease;
-
-    // The Pool Balance "virtual" decrease?
-    // If we emit rewards, they become "Pending" for users. They are still physically in the main wallet until claimed.
-    // But mathematically they are "allocated".
-    // Should we deduct from `reward_pool_sol` now?
-    // Yes, to prevent double counting.
-
-    const newRewardPoolSol = poolData.reward_pool_sol - rewardsToEmit;
+    console.log(
+      `⏱️ Time elapsed: ${timeDiffSeconds}s, rewards to emit: ${rewardsToEmit.toFixed(
+        9
+      )} SOL`
+    );
 
     return {
       ...poolData,
-      reward_pool_sol: newRewardPoolSol > 0 ? newRewardPoolSol : 0,
-      acc_reward_per_share: newAccRewardPerShare,
       last_reward_time: now,
       updated_at: now,
     };
@@ -160,20 +152,28 @@ class StakingService {
       if (posDoc.exists) {
         userPos = posDoc.data();
 
-        // Calculate pending with FIXED MINING RATE (not APR-based)
-        // Base rate: 0.00000000066 SOL/second per MKIN staked
+        // Calculate pending with 30% FLAT ROI (token-value-based)
         // Checkpoint-based calculation (Fixes "Instant Rewards" bug)
         if (userPos.updated_at && userPos.principal_amount > 0) {
           const now = Date.now();
           const lastUpdateMs = userPos.updated_at.toMillis();
           const elapsedSeconds = (now - lastUpdateMs) / 1000;
 
-          // Fixed base mining rate per MKIN per second (matches spec)
-          const BASE_RATE_PER_MKIN = 0.000000000000025; // 2.5e-14 SOL/second per MKIN
+          // NEW: 30% Flat ROI Logic
+          const SECONDS_IN_YEAR = 365 * 24 * 60 * 60;
+          const ROI_PERCENT = 0.3; // 30% per year
 
-          // rewards = principal * elapsed * rate
+          // Fetch current MKIN/SOL price
+          const { getMkinPriceSOL } = await import("../utils/mkinPrice.js");
+          const tokenPriceSol = await getMkinPriceSOL();
+
+          // Calculate accrued rewards: (principal * 30% * price * time) / year
           const accruedSinceLastUpdate =
-            userPos.principal_amount * elapsedSeconds * BASE_RATE_PER_MKIN;
+            (userPos.principal_amount *
+              ROI_PERCENT *
+              tokenPriceSol *
+              elapsedSeconds) /
+            SECONDS_IN_YEAR;
 
           // Apply booster multiplier
           const boosterMultiplier = this._getBoosterMultiplier(
@@ -184,10 +184,11 @@ class StakingService {
           // Total Pending = Stored Pending (Checkpoint) + Accrued Since Checkpoint
           pending = (userPos.pending_rewards || 0) + accruedWithBooster;
 
-          console.log(`⛏️ Realtime mining calculation:`);
+          console.log(`⛏️ Realtime mining calculation (30% ROI):`);
           console.log(
             `   Principal: ${userPos.principal_amount.toLocaleString()} MKIN`
           );
+          console.log(`   Token Price: ${tokenPriceSol.toFixed(6)} SOL/MKIN`);
           console.log(`   Time since update: ${elapsedSeconds.toFixed(0)}s`);
           console.log(
             `   Stored Pending: ${(userPos.pending_rewards || 0).toFixed(
@@ -206,16 +207,23 @@ class StakingService {
       }
     }
 
-    // Calculate user's mining rate (FIXED rate per MKIN)
-    const BASE_RATE_PER_MKIN = 0.000000000000025; // 2.5e-14 SOL/second per MKIN (Matches spec)
-    const FIXED_APR = 30; // 30% per year
+    // Calculate user's mining rate (30% ROI based on token value)
+    const SECONDS_IN_YEAR = 365 * 24 * 60 * 60;
+    const ROI_PERCENT = 0.3; // 30% per year
+    const FIXED_APR = 30; // Display as 30% APR
 
     let baseMiningRate = 0;
     let totalMiningRate = 0;
 
     if (userPos?.principal_amount > 0) {
-      // Base rate = principal × base_rate_per_mkin
-      baseMiningRate = userPos.principal_amount * BASE_RATE_PER_MKIN;
+      // Fetch current MKIN/SOL price
+      const { getMkinPriceSOL } = await import("../utils/mkinPrice.js");
+      const tokenPriceSol = await getMkinPriceSOL();
+
+      // Base rate = (principal * 30% * price) / seconds_in_year
+      baseMiningRate =
+        (userPos.principal_amount * ROI_PERCENT * tokenPriceSol) /
+        SECONDS_IN_YEAR;
 
       // Apply booster multiplier
       const boosterMultiplier = this._getBoosterMultiplier(
@@ -223,7 +231,11 @@ class StakingService {
       );
       totalMiningRate = baseMiningRate * boosterMultiplier;
 
-      console.log(`⛏️ User mining rate:`);
+      console.log(`⛏️ User mining rate (30% ROI):`);
+      console.log(
+        `   Principal: ${userPos.principal_amount.toLocaleString()} MKIN`
+      );
+      console.log(`   Token Price: ${tokenPriceSol.toFixed(6)} SOL/MKIN`);
       console.log(`   Base: ${baseMiningRate.toFixed(12)} SOL/s`);
       console.log(`   Booster: ${boosterMultiplier}x`);
       console.log(`   Total: ${totalMiningRate.toFixed(12)} SOL/s`);
@@ -251,7 +263,7 @@ class StakingService {
       },
       config: {
         stakingWalletAddress: process.env.STAKING_WALLET_ADDRESS,
-        baseRatePerMkin: BASE_RATE_PER_MKIN,
+        roiPercent: ROI_PERCENT,
         fixedApr: FIXED_APR,
       },
       timestamp: Date.now(),
@@ -354,7 +366,7 @@ class StakingService {
           };
 
       // Update Pool State (Mint rewards up to now)
-      poolData = this._calculateNewPoolState(poolData);
+      poolData = await this._calculateNewPoolState(poolData);
 
       // Get/Init User Position
       let posData = posDoc.exists
@@ -362,19 +374,13 @@ class StakingService {
         : {
             user_id: firebaseUid,
             principal_amount: 0,
-            reward_debt: 0,
             pending_rewards: 0,
             total_accrued_sol: 0,
             total_claimed_sol: 0,
           };
 
-      // Update Pending Rewards for User (before changing principal)
-      if (posData.principal_amount > 0) {
-        const accrued =
-          posData.principal_amount * poolData.acc_reward_per_share -
-          posData.reward_debt;
-        posData.pending_rewards += accrued;
-      }
+      // NOTE: We no longer use MasterChef-style acc_reward_per_share/reward_debt
+      // Rewards are calculated purely based on: (principal * 30% * price * time) / year
 
       // 🚀 ADD ENTRY FEE TO REWARD POOL (Self-Sustaining Pool Growth!)
       poolData.reward_pool_sol =
@@ -387,10 +393,8 @@ class StakingService {
         )} SOL`
       );
 
-      // Update Principal & Debt (FULL amount, no deduction)
+      // Update Principal (FULL amount, no deduction)
       posData.principal_amount += amount; // Full stake amount!
-      posData.reward_debt =
-        posData.principal_amount * poolData.acc_reward_per_share;
 
       // Track stake start time (for client-side reward calculation)
       if (!posData.stake_start_time) {
@@ -488,7 +492,7 @@ class StakingService {
       let posData = posDoc.data();
 
       // Update Pool
-      poolData = this._calculateNewPoolState(poolData);
+      poolData = await this._calculateNewPoolState(poolData);
 
       // 🚀 ADD FEE TO REWARD POOL (Self-Sustaining Pool)
       poolData.reward_pool_sol = (poolData.reward_pool_sol || 0) + feeAmount;
@@ -500,21 +504,17 @@ class StakingService {
         )} SOL`
       );
 
-      // Calc Pending
-      const accrued =
-        posData.principal_amount * poolData.acc_reward_per_share -
-        posData.reward_debt;
-      let totalPending = (posData.pending_rewards || 0) + accrued;
+      // Calc Pending (using checkpoint-based 30% ROI)
+      // The real-time calculation in getOverview handles accrual since last update
+      let totalPending = posData.pending_rewards || 0;
 
       if (totalPending <= 0) throw new StakingError("No rewards to claim");
 
       // Payout Logic
       rewardAmount = totalPending;
 
-      // Reset User
+      // Reset User pending rewards
       posData.pending_rewards = 0;
-      posData.reward_debt =
-        posData.principal_amount * poolData.acc_reward_per_share;
       posData.total_claimed_sol =
         (posData.total_claimed_sol || 0) + rewardAmount;
       posData.total_accrued_sol =
@@ -633,7 +633,7 @@ class StakingService {
       let poolData = poolDoc.exists ? poolDoc.data() : await this.getPoolData();
 
       // 1. Update Pool
-      poolData = this._calculateNewPoolState(poolData);
+      poolData = await this._calculateNewPoolState(poolData);
 
       // 🚀 ADD FEE TO REWARD POOL (Self-Sustaining Pool)
       poolData.reward_pool_sol = (poolData.reward_pool_sol || 0) + feeAmount;
@@ -645,16 +645,12 @@ class StakingService {
         )} SOL`
       );
 
-      // 2. Harvest Pending Rewards
-      const accrued =
-        posData.principal_amount * poolData.acc_reward_per_share -
-        posData.reward_debt;
-      posData.pending_rewards = (posData.pending_rewards || 0) + accrued;
+      // 2. Harvest Pending Rewards (checkpoint them, don't pay out)
+      // The pending rewards will remain and can be claimed later
+      // No need to update reward_debt since we're not using MasterChef logic
 
-      // 3. Update Principal & Debt
+      // 3. Update Principal
       posData.principal_amount -= amount;
-      posData.reward_debt =
-        posData.principal_amount * poolData.acc_reward_per_share;
 
       // 4. Update Pool Total
       poolData.total_staked -= amount;

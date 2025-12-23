@@ -38,7 +38,7 @@ router.post("/calculate-fee", async (req, res) => {
 
     const { calculateStakingFee } = await import("../utils/mkinPrice.js");
     const feeData = await calculateStakingFee(Number(amount), 5);
-    
+
     res.json(feeData);
   } catch (e) {
     console.error(e);

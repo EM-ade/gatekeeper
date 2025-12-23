@@ -210,81 +210,87 @@ if (!admin.apps.length) {
     if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
       const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
       try {
-        const svcJson = JSON.parse(fs.readFileSync(credPath, 'utf8'));
+        const svcJson = JSON.parse(fs.readFileSync(credPath, "utf8"));
         admin.initializeApp({
           credential: admin.credential.cert(svcJson),
           databaseURL: process.env.FIREBASE_DATABASE_URL,
         });
-        console.log("Firebase Admin initialized with GOOGLE_APPLICATION_CREDENTIALS:", credPath);
+        console.log(
+          "Firebase Admin initialized with GOOGLE_APPLICATION_CREDENTIALS:",
+          credPath
+        );
       } catch (e) {
-        console.error("Failed to load credentials from GOOGLE_APPLICATION_CREDENTIALS:", e);
+        console.error(
+          "Failed to load credentials from GOOGLE_APPLICATION_CREDENTIALS:",
+          e
+        );
         throw e;
       }
-    } 
+    }
     // Fall back to FIREBASE_SERVICE_ACCOUNT_JSON env var
     else {
       let svcJson = null;
       const rawEnv = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-    if (rawEnv) {
-      // Strip UTF-8 BOM if present and trim
-      let content = rawEnv.replace(/^\uFEFF/, "").trim();
+      if (rawEnv) {
+        // Strip UTF-8 BOM if present and trim
+        let content = rawEnv.replace(/^\uFEFF/, "").trim();
 
-      // Fix: Strip surrounding single quotes if present (common .env issue)
-      if (content.startsWith("'") && content.endsWith("'")) {
-        content = content.slice(1, -1);
-      }
-
-      if (content.startsWith("{")) {
-        // JSON directly in env var
-        try {
-          svcJson = JSON.parse(content);
-        } catch (e) {
-          console.error("JSON Parse Error. Content being parsed:", content);
-          throw e;
+        // Fix: Strip surrounding single quotes if present (common .env issue)
+        if (content.startsWith("'") && content.endsWith("'")) {
+          content = content.slice(1, -1);
         }
-      } else if (/\.json$/i.test(content)) {
-        // Treat as path to a JSON file (fallback)
-        try {
-          const fileStr = fs
-            .readFileSync(content, "utf8")
-            .replace(/^\uFEFF/, "");
-          svcJson = JSON.parse(fileStr);
-        } catch (e) {
-          console.warn(
-            "Failed to read service account JSON from path:",
-            content,
-            e
-          );
+
+        if (content.startsWith("{")) {
+          // JSON directly in env var
+          try {
+            svcJson = JSON.parse(content);
+          } catch (e) {
+            console.error("JSON Parse Error. Content being parsed:", content);
+            throw e;
+          }
+        } else if (/\.json$/i.test(content)) {
+          // Treat as path to a JSON file (fallback)
+          try {
+            const fileStr = fs
+              .readFileSync(content, "utf8")
+              .replace(/^\uFEFF/, "");
+            svcJson = JSON.parse(fileStr);
+          } catch (e) {
+            console.warn(
+              "Failed to read service account JSON from path:",
+              content,
+              e
+            );
+          }
+        } else {
+          // Unexpected format; attempt JSON parse anyway after BOM strip
+          try {
+            svcJson = JSON.parse(content);
+          } catch (_) {
+            /* ignore */
+          }
         }
-      } else {
-        // Unexpected format; attempt JSON parse anyway after BOM strip
-        try {
-          svcJson = JSON.parse(content);
-        } catch (_) {
-          /* ignore */
+      }
+
+      if (svcJson) {
+        // Ensure private_key has real newlines (env often stores as escaped \n)
+        if (svcJson.private_key && typeof svcJson.private_key === "string") {
+          svcJson.private_key = svcJson.private_key.replace(/\\n/g, "\n");
         }
-      }
-    }
+        const initConfig = {
+          credential: admin.credential.cert(svcJson),
+        };
 
-    if (svcJson) {
-      // Ensure private_key has real newlines (env often stores as escaped \n)
-      if (svcJson.private_key && typeof svcJson.private_key === 'string') {
-        svcJson.private_key = svcJson.private_key.replace(/\\n/g, '\n');
-      }
-      const initConfig = {
-        credential: admin.credential.cert(svcJson),
-      };
+        // Add databaseURL if available for Realtime Database
+        if (process.env.FIREBASE_DATABASE_URL) {
+          initConfig.databaseURL = process.env.FIREBASE_DATABASE_URL;
+        }
 
-      // Add databaseURL if available for Realtime Database
-      if (process.env.FIREBASE_DATABASE_URL) {
-        initConfig.databaseURL = process.env.FIREBASE_DATABASE_URL;
-      }
-
-      admin.initializeApp(initConfig);
-      console.log(
-        "Firebase Admin initialized with FIREBASE_SERVICE_ACCOUNT_JSON, project:",
-        svcJson.project_id
-      );
+        admin.initializeApp(initConfig);
+        console.log(
+          "Firebase Admin initialized with FIREBASE_SERVICE_ACCOUNT_JSON, project:",
+          svcJson.project_id
+        );
       } else {
         throw new Error("No Firebase credentials found in environment");
       }
@@ -980,11 +986,13 @@ app.post("/api/withdraw/initiate", verifyFirebase, async (req, res) => {
     }
 
     // 4. Get SOL price and calculate tiered fee
-    // $0.50 for withdrawals under 10,000 MKIN
-    // $1.00 for withdrawals of 10,000 MKIN or more
+    // Tiered fees: < 5000: $0.50, 5000-7499: $1.00, 7500-9999: $2.00, >= 10000: $5.00
     const { getSolPriceUSD } = await import("./utils/solPrice.js");
     const solPrice = await getSolPriceUSD();
-    const feeInUsd = amount >= 10000 ? 1.0 : 0.5;
+    let feeInUsd = 0.5;
+    if (amount >= 10000) feeInUsd = 5.0;
+    else if (amount >= 7500) feeInUsd = 2.0;
+    else if (amount >= 5000) feeInUsd = 1.0;
     const feeInSol = feeInUsd / solPrice;
 
     console.log(
@@ -1318,7 +1326,7 @@ app.post("/api/withdraw/complete", verifyFirebase, async (req, res) => {
           error: "Failed to send MKIN tokens",
           refunded: true,
           message:
-            "Your balance has been refunded. The $0.50 fee was not refunded.",
+            "Your balance has been refunded. The transaction fee was not refunded.",
         });
       } catch (refundError) {
         console.error(
@@ -1353,7 +1361,7 @@ app.post("/api/withdraw/complete", verifyFirebase, async (req, res) => {
         amount,
         feeSignature,
         mkinTxHash,
-        description: `Withdrew ${amount} MKIN (fee: $0.50)`,
+        description: `Withdrew ${amount} MKIN`,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     } catch (err) {
