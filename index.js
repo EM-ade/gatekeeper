@@ -345,6 +345,10 @@ app.use("/api/staking", stakingRoutes);
 import goalRoutes from "./routes/goal.js";
 app.use("/api/goal", goalRoutes);
 
+// Import Leaderboard Routes
+import leaderboardRoutes from "./routes/leaderboard.js";
+app.use("/api/leaderboard", leaderboardRoutes);
+
 // Health check
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
