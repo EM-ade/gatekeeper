@@ -153,14 +153,145 @@ async function fetchMkinPriceFromDexScreener() {
 }
 
 /**
+ * Fetch MKIN price from Pyth Network
+ */
+async function fetchMkinPriceFromPyth() {
+  try {
+    const tokenAddress = process.env.MKIN_TOKEN_MINT;
+    if (!tokenAddress) {
+      throw new Error("MKIN_TOKEN_MINT not configured");
+    }
+
+    const response = await fetch(
+      `https://hermes.pyth.network/api/latest_price_feeds?ids[]=${tokenAddress}`,
+      { timeout: 5000 }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Pyth API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const priceFeeds = data;
+
+    if (!priceFeeds || priceFeeds.length === 0) {
+      throw new Error("No price feeds found on Pyth");
+    }
+
+    const priceFeed = priceFeeds[0];
+    const priceData = priceFeed.price;
+
+    if (!priceData) {
+      throw new Error("No price data in Pyth feed");
+    }
+
+    // Pyth returns price with exponent, need to calculate actual price
+    const price = parseFloat(priceData.price) * Math.pow(10, priceData.expo);
+
+    if (!price || isNaN(price)) {
+      throw new Error("Invalid price from Pyth");
+    }
+
+    console.log(`✅ Pyth MKIN price: $${price}`);
+    return { usd: price };
+  } catch (error) {
+    console.warn("❌ Pyth MKIN price failed:", error.message);
+    return null;
+  }
+}
+
+/**
+ * Fetch MKIN price from CoinGecko (token lookup)
+ */
+async function fetchMkinPriceFromCoinGecko() {
+  try {
+    const tokenAddress = process.env.MKIN_TOKEN_MINT;
+    if (!tokenAddress) {
+      throw new Error("MKIN_TOKEN_MINT not configured");
+    }
+
+    // First try direct token address lookup
+    const response = await fetch(
+      `https://api.coingecko.com/api/v3/simple/token_price/solana?contract_addresses=${tokenAddress}&vs_currencies=usd`,
+      { timeout: 5000 }
+    );
+
+    if (!response.ok) {
+      throw new Error(`CoinGecko API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const tokenData = data[tokenAddress.toLowerCase()];
+
+    if (!tokenData || !tokenData.usd) {
+      throw new Error("Token not found on CoinGecko");
+    }
+
+    const price = parseFloat(tokenData.usd);
+
+    if (!price || isNaN(price)) {
+      throw new Error("Invalid price from CoinGecko");
+    }
+
+    console.log(`✅ CoinGecko MKIN price: $${price}`);
+    return { usd: price };
+  } catch (error) {
+    console.warn("❌ CoinGecko MKIN price failed:", error.message);
+    return null;
+  }
+}
+
+/**
+ * Fetch MKIN price from Birdeye (Solana DEX aggregator)
+ */
+async function fetchMkinPriceFromBirdeye() {
+  try {
+    const tokenAddress = process.env.MKIN_TOKEN_MINT;
+    if (!tokenAddress) {
+      throw new Error("MKIN_TOKEN_MINT not configured");
+    }
+
+    const response = await fetch(
+      `https://public-api.birdeye.so/defi/price?address=${tokenAddress}`,
+      { 
+        timeout: 5000,
+        headers: {
+          'X-API-KEY': process.env.BIRDEYE_API_KEY || 'demo' // Optional API key
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Birdeye API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const price = parseFloat(data.data?.value);
+
+    if (!price || isNaN(price)) {
+      throw new Error("Invalid price from Birdeye");
+    }
+
+    console.log(`✅ Birdeye MKIN price: $${price}`);
+    return { usd: price };
+  } catch (error) {
+    console.warn("❌ Birdeye MKIN price failed:", error.message);
+    return null;
+  }
+}
+
+/**
  * Get MKIN price in USD
  *
  * Priority:
  * 1. Manual configuration (MKIN_PRICE_USD env var)
  * 2. Jupiter API (mainnet verified tokens)
- * 3. Binance (if MKIN is listed)
- * 4. DexScreener (DEX aggregator data)
- * 5. Throw error if all sources fail
+ * 3. Pyth Network (reliable oracle data)
+ * 4. Birdeye (Solana DEX aggregator) 
+ * 5. CoinGecko (token database)
+ * 6. Binance (major exchange)
+ * 7. DexScreener (DEX aggregator data)
+ * 8. Throw error if all sources fail
  */
 export async function getMkinPriceUSD() {
   // Check cache first
@@ -187,44 +318,37 @@ export async function getMkinPriceUSD() {
     }
   }
 
-  // Priority 2: Try Jupiter (mainnet only)
-  const jupiterPrice = await fetchMkinPriceFromJupiter();
-  if (jupiterPrice) {
-    priceCache = {
-      mkinUsd: jupiterPrice.usd,
-      mkinSol: null,
-      timestamp: now,
-      ttl: 60 * 1000,
-    };
-    return jupiterPrice.usd;
-  }
+  // Define all price sources in order of reliability
+  const priceSources = [
+    { name: "Jupiter", fetch: fetchMkinPriceFromJupiter },
+    { name: "Pyth Network", fetch: fetchMkinPriceFromPyth },
+    { name: "Birdeye", fetch: fetchMkinPriceFromBirdeye },
+    { name: "CoinGecko", fetch: fetchMkinPriceFromCoinGecko },
+    { name: "Binance", fetch: fetchMkinPriceFromBinance },
+    { name: "DexScreener", fetch: fetchMkinPriceFromDexScreener }
+  ];
 
-  // Priority 3: Try Binance
-  const binancePrice = await fetchMkinPriceFromBinance();
-  if (binancePrice) {
-    priceCache = {
-      mkinUsd: binancePrice.usd,
-      mkinSol: null,
-      timestamp: now,
-      ttl: 60 * 1000,
-    };
-    return binancePrice.usd;
-  }
-
-  // Priority 4: Try DexScreener
-  const dexScreenerPrice = await fetchMkinPriceFromDexScreener();
-  if (dexScreenerPrice) {
-    priceCache = {
-      mkinUsd: dexScreenerPrice.usd,
-      mkinSol: null,
-      timestamp: now,
-      ttl: 60 * 1000,
-    };
-    return dexScreenerPrice.usd;
+  // Try each source in order
+  for (const source of priceSources) {
+    try {
+      const priceResult = await source.fetch();
+      if (priceResult && priceResult.usd) {
+        console.log(`✅ Successfully got MKIN price from ${source.name}`);
+        priceCache = {
+          mkinUsd: priceResult.usd,
+          mkinSol: null,
+          timestamp: now,
+          ttl: 60 * 1000,
+        };
+        return priceResult.usd;
+      }
+    } catch (error) {
+      console.warn(`❌ ${source.name} failed:`, error.message);
+    }
   }
 
   // No fallback - throw error
-  throw new Error("❌ All MKIN price sources failed! Unable to determine token price. Please check network connectivity or set MKIN_PRICE_USD manually in .env");
+  throw new Error(`❌ All ${priceSources.length} MKIN price sources failed! Unable to determine token price. Please check network connectivity or set MKIN_PRICE_USD manually in .env`);
 }
 
 /**
