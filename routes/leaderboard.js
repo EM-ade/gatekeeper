@@ -32,12 +32,12 @@ router.get("/mining", async (req, res) => {
         const data = doc.data();
         const userId = doc.id;
 
-        // Get user details from userRewards collection
-        const userDoc = await db.collection("userRewards").doc(userId).get();
+        // Get username from users collection (per Firebase schema)
+        const userDoc = await db.collection("users").doc(userId).get();
         const userData = userDoc.exists ? userDoc.data() : {};
 
-        // Simple username display - just use display name or User-{id}
-        let displayName = userData.displayName || userData.username || `User${userId.slice(-4)}`;
+        // Use actual username from users collection
+        let displayName = userData.username || `User${userId.slice(-4)}`;
 
         leaderboard.push({
           userId,
@@ -72,11 +72,11 @@ router.get("/mining", async (req, res) => {
         const data = doc.data();
         const userId = doc.id;
 
-        // Get user details
-        const userDoc = await db.collection("userRewards").doc(userId).get();
+        // Get username from users collection (per Firebase schema)
+        const userDoc = await db.collection("users").doc(userId).get();
         const userData = userDoc.exists ? userDoc.data() : {};
 
-        let displayName = userData.displayName || userData.username || `User${userId.slice(-4)}`;
+        let displayName = userData.username || `User${userId.slice(-4)}`;
 
         leaderboard.push({
           userId,
