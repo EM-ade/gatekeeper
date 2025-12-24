@@ -76,12 +76,91 @@ async function fetchMkinSolPairPrice() {
 }
 
 /**
+ * Fetch MKIN price from Binance (if MKIN is listed)
+ */
+async function fetchMkinPriceFromBinance() {
+  try {
+    // Try MKIN/USDT pair first
+    const response = await fetch(
+      "https://api.binance.com/api/v3/ticker/price?symbol=MKINUSDT",
+      { timeout: 5000 }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Binance API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const price = parseFloat(data.price);
+
+    if (!price || isNaN(price)) {
+      throw new Error("Invalid price from Binance");
+    }
+
+    console.log(`✅ Binance MKIN price: $${price}`);
+    return { usd: price };
+  } catch (error) {
+    console.warn("❌ Binance MKIN price failed:", error.message);
+    return null;
+  }
+}
+
+/**
+ * Fetch MKIN price from DexScreener
+ */
+async function fetchMkinPriceFromDexScreener() {
+  try {
+    const tokenAddress = process.env.MKIN_TOKEN_MINT;
+    if (!tokenAddress) {
+      throw new Error("MKIN_TOKEN_MINT not configured");
+    }
+
+    const response = await fetch(
+      `https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`,
+      { timeout: 5000 }
+    );
+
+    if (!response.ok) {
+      throw new Error(`DexScreener API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const pairs = data.pairs;
+
+    if (!pairs || pairs.length === 0) {
+      throw new Error("No trading pairs found on DexScreener");
+    }
+
+    // Find the most liquid pair (highest volume)
+    const bestPair = pairs.reduce((best, current) => {
+      const currentVolume = parseFloat(current.volume?.h24 || 0);
+      const bestVolume = parseFloat(best.volume?.h24 || 0);
+      return currentVolume > bestVolume ? current : best;
+    });
+
+    const price = parseFloat(bestPair.priceUsd);
+
+    if (!price || isNaN(price)) {
+      throw new Error("Invalid price from DexScreener");
+    }
+
+    console.log(`✅ DexScreener MKIN price: $${price} (from ${bestPair.dexId})`);
+    return { usd: price };
+  } catch (error) {
+    console.warn("❌ DexScreener MKIN price failed:", error.message);
+    return null;
+  }
+}
+
+/**
  * Get MKIN price in USD
  *
  * Priority:
  * 1. Manual configuration (MKIN_PRICE_USD env var)
- * 2. Jupiter API (mainnet verified tokens only)
- * 3. Fallback ($1 default)
+ * 2. Jupiter API (mainnet verified tokens)
+ * 3. Binance (if MKIN is listed)
+ * 4. DexScreener (DEX aggregator data)
+ * 5. Throw error if all sources fail
  */
 export async function getMkinPriceUSD() {
   // Check cache first
@@ -120,10 +199,32 @@ export async function getMkinPriceUSD() {
     return jupiterPrice.usd;
   }
 
-  // Priority 3: Fallback ($1 default)
-  console.warn("⚠️ All MKIN price sources failed! Using fallback: $1");
-  console.warn("💡 Set MKIN_PRICE_USD in .env to configure manually");
-  return 1.0;
+  // Priority 3: Try Binance
+  const binancePrice = await fetchMkinPriceFromBinance();
+  if (binancePrice) {
+    priceCache = {
+      mkinUsd: binancePrice.usd,
+      mkinSol: null,
+      timestamp: now,
+      ttl: 60 * 1000,
+    };
+    return binancePrice.usd;
+  }
+
+  // Priority 4: Try DexScreener
+  const dexScreenerPrice = await fetchMkinPriceFromDexScreener();
+  if (dexScreenerPrice) {
+    priceCache = {
+      mkinUsd: dexScreenerPrice.usd,
+      mkinSol: null,
+      timestamp: now,
+      ttl: 60 * 1000,
+    };
+    return dexScreenerPrice.usd;
+  }
+
+  // No fallback - throw error
+  throw new Error("❌ All MKIN price sources failed! Unable to determine token price. Please check network connectivity or set MKIN_PRICE_USD manually in .env");
 }
 
 /**
