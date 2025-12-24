@@ -36,19 +36,8 @@ router.get("/mining", async (req, res) => {
         const userDoc = await db.collection("userRewards").doc(userId).get();
         const userData = userDoc.exists ? userDoc.data() : {};
 
-        // Get Discord display name from linked_wallets if available
-        let displayName = userData.displayName || `User-${userId.slice(0, 8)}`;
-        
-        // Try to get Discord display name from gatekeeper database
-        try {
-          if (userData.walletAddress) {
-            // This would require database query to linked_wallets table
-            // For now, use the Firebase displayName or generate one
-            displayName = userData.displayName || `Miner-${userId.slice(0, 8)}`;
-          }
-        } catch (error) {
-          console.warn("Could not fetch Discord display name:", error.message);
-        }
+        // Simple username display - just use display name or User-{id}
+        let displayName = userData.displayName || userData.username || `User${userId.slice(-4)}`;
 
         leaderboard.push({
           userId,
@@ -87,7 +76,7 @@ router.get("/mining", async (req, res) => {
         const userDoc = await db.collection("userRewards").doc(userId).get();
         const userData = userDoc.exists ? userDoc.data() : {};
 
-        let displayName = userData.displayName || `Miner-${userId.slice(0, 8)}`;
+        let displayName = userData.displayName || userData.username || `User${userId.slice(-4)}`;
 
         leaderboard.push({
           userId,
