@@ -6,8 +6,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "node index.js",
-    "start": "node index.js",
+    "dev": "cross-env NODE_ENV=development node index.js",
+    "start": "cross-env NODE_ENV=production node index.js",
     "migrate-wallets": "node migrate_wallet_addresses.js",
     "fix-wallets": "node advanced_wallet_fix.js",
     "fix-wallets-web3": "node web3_context_wallet_fix.js",
@@ -30,6 +30,7 @@
     "express": "^4.22.1",
     "firebase-admin": "^12.7.0",
     "ioredis": "^5.7.0",
+    "node-cron": "^4.2.1",
     "node-fetch": "^3.3.2",
     "postgres": "^3.4.7",
     "redis": "^5.8.2",
@@ -37,6 +38,7 @@
   },
   "devDependencies": {
     "@flydotio/dockerfile": "^0.7.10",
+    "cross-env": "^7.0.3",
     "nodemon": "^3.0.1"
   }
 }
