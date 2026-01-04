@@ -45,7 +45,7 @@ const __dirname = path.dirname(__filename);
 
 const CONFIG = {
   // Distribution settings
-  DISTRIBUTION_AMOUNT: 10000,
+  DISTRIBUTION_AMOUNT: 35000,
   DISTRIBUTION_ID: 'one_time_mkin_distribution_2025_01_05_6am',
   
   // Batch processing

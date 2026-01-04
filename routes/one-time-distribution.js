@@ -12,7 +12,7 @@ const router = express.Router();
 
 // Configuration
 const CONFIG = {
-  DISTRIBUTION_AMOUNT: 10000,
+  DISTRIBUTION_AMOUNT: 35000,
   DISTRIBUTION_ID: 'one_time_mkin_distribution_2025_01_05_6am',
   BATCH_SIZE: 50,
   MAX_RETRIES: 3,
