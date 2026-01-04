@@ -19,7 +19,7 @@ import {
   VerificationSessionError,
 } from "./services/verificationSessionService.js";
 import * as guildVerificationConfigStore from "./repositories/guildVerificationConfigsRepository.js";
-// import PeriodicVerificationService from "./services/periodicVerification.js";
+import PeriodicVerificationService from "./services/periodicVerification.js";
 import { PublicKey } from "@solana/web3.js";
 import { heliusRateLimiter } from "./utils/rateLimiter.js";
 import withdrawalLogger from "./services/withdrawalLogger.js";
@@ -135,17 +135,18 @@ client.once("ready", async () => {
   await eventHandler(client); // Register event listeners
 
   // Start periodic verification service
-  // DISABLED: Periodic verification service
-  // const periodicVerification = new PeriodicVerificationService(client);
-  // periodicVerification.start();
+  console.log("Initializing periodic verification service...");
+  const periodicVerification = new PeriodicVerificationService(client);
+  periodicVerification.start();
+  console.log("Periodic verification service started successfully");
 
   // Export the periodic verification service for use in commands
-  // global.periodicVerificationService = periodicVerification;
+  global.periodicVerificationService = periodicVerification;
 
   // Graceful shutdown
   process.on("SIGINT", () => {
     console.log("\nShutting down gracefully...");
-    // periodicVerification.stop();
+    periodicVerification.stop();
     process.exit(0);
   });
 
