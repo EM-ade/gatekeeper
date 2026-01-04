@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "dev": "cross-env NODE_ENV=development node index.js",
-    "start": "cross-env NODE_ENV=production node index.js",
+    "start": "node index.js",
     "migrate-wallets": "node migrate_wallet_addresses.js",
     "fix-wallets": "node advanced_wallet_fix.js",
     "fix-wallets-web3": "node web3_context_wallet_fix.js",
