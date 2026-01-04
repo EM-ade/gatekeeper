@@ -1,5 +1,21 @@
 // Move dotenv import to the very top before any other imports
 import "dotenv/config"; // Load environment variables
+
+// Import environment configuration
+import environmentConfig from "./config/environment.js";
+
+// Validate required environment variables
+try {
+  environmentConfig.validateRequiredEnvVars();
+  console.log("✅ Environment configuration validated successfully");
+} catch (error) {
+  console.error("❌ Environment validation failed:", error.message);
+  process.exit(1);
+}
+
+// Log environment info
+const envInfo = environmentConfig.getEnvironmentInfo();
+console.log(`🌍 Environment: ${envInfo.nodeEnv} (${envInfo.isDevelopment ? 'Development' : 'Production'})`);
 console.log(
   "Environment loaded, DATABASE_URL:",
   process.env.DATABASE_URL ? "Set" : "NOT SET"
@@ -134,19 +150,27 @@ client.once("ready", async () => {
   await commandHandler(client); // Load commands into client.commands
   await eventHandler(client); // Register event listeners
 
-  // Start periodic verification service
-  console.log("Initializing periodic verification service...");
-  const periodicVerification = new PeriodicVerificationService(client);
-  periodicVerification.start();
-  console.log("Periodic verification service started successfully");
+  // Start periodic verification service based on environment configuration
+  const periodicServicesConfig = environmentConfig.periodicServicesConfig;
+  if (periodicServicesConfig.enablePeriodicVerification) {
+    console.log("Initializing periodic verification service...");
+    const periodicVerification = new PeriodicVerificationService(client);
+    periodicVerification.start();
+    console.log("Periodic verification service started successfully");
 
-  // Export the periodic verification service for use in commands
-  global.periodicVerificationService = periodicVerification;
+    // Export the periodic verification service for use in commands
+    global.periodicVerificationService = periodicVerification;
+  } else {
+    console.log("⏸️ Periodic verification service disabled in development mode");
+    global.periodicVerificationService = null;
+  }
 
   // Graceful shutdown
   process.on("SIGINT", () => {
-    console.log("\nShutting down gracefully...");
-    periodicVerification.stop();
+    console.log("\n🛑 Shutting down gracefully...");
+    if (global.periodicVerificationService) {
+      global.periodicVerificationService.stop();
+    }
     process.exit(0);
   });
 
@@ -349,6 +373,14 @@ app.use("/api/goal", goalRoutes);
 // Import Leaderboard Routes
 import leaderboardRoutes from "./routes/leaderboard.js";
 app.use("/api/leaderboard", leaderboardRoutes);
+
+// Import Booster Routes
+import boosterRoutes from "./routes/boosters.js";
+app.use("/api/boosters", boosterRoutes);
+
+// Import One-Time Distribution Routes
+import distributionRoutes from "./routes/one-time-distribution.js";
+app.use("/api/distribution", distributionRoutes);
 
 // Health check
 app.get("/health", (_req, res) => res.json({ ok: true }));
@@ -2181,8 +2213,13 @@ app.post("/api/verification/auto", verifyFirebase, async (req, res) => {
   }
 });
 
-// Start HTTP server on fixed port 3001 (do not rely on env to avoid conflicts)
-const PORT = 3001;
-app.listen(PORT, () => {
-  console.log(`HTTP API listening on :${PORT}`);
+// Start HTTP server using environment configuration
+const apiConfig = environmentConfig.apiConfig;
+const PORT = apiConfig.port;
+const HOST = apiConfig.host;
+
+app.listen(PORT, HOST, () => {
+  console.log(`🚀 HTTP API listening on ${HOST}:${PORT}`);
+  console.log(`📊 Environment: ${envInfo.nodeEnv}`);
+  console.log(`🔧 Feature flags:`, environmentConfig.featureFlags);
 });

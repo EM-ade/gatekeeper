@@ -13,6 +13,7 @@ import {
 } from "@solana/spl-token";
 import { getFirestore } from "firebase-admin/firestore";
 import bs58 from "bs58";
+import BoosterService from "./boosterService.js";
 
 // Configuration Constants
 const STAKING_POOL_ID = "staking_global"; // Doc ID in 'config' collection or root 'staking_pool' collection
@@ -34,14 +35,33 @@ class StakingService {
   constructor() {
     // Lazy init db
     this._db = null;
+    this._boosterService = null; // Lazy init BoosterService
 
-    // Use Helius or default RPC
-    const rpcUrl =
-      process.env.SOLANA_RPC_URL ||
-      (process.env.HELIUS_API_KEY
-        ? `https://devnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
-        : "https://api.devnet.solana.com");
-    this.connection = new Connection(rpcUrl, "confirmed");
+    // Use environment-configured network settings
+    this._networkInitialized = this._initializeNetwork();
+  }
+
+  async _initializeNetwork() {
+    // Import environment configuration
+    const { default: environmentConfig } = await import('../config/environment.js');
+    const networkConfig = environmentConfig.networkConfig;
+    
+    // Use environment-configured RPC URL
+    this.connection = new Connection(
+      networkConfig.rpcUrl,
+      "confirmed"
+    );
+    this.tokenMint = new PublicKey(networkConfig.tokenMint);
+    this.isDevnet = networkConfig.isDevnet;
+    this.cluster = networkConfig.cluster;
+    this.network = networkConfig.cluster;
+    console.log(`✅ StakingService initialized with network: ${this.network}`);
+  }
+
+  async _ensureInitialized() {
+    if (this._networkInitialized) {
+      await this._networkInitialized;
+    }
   }
 
   get db() {
@@ -49,6 +69,13 @@ class StakingService {
       this._db = getFirestore();
     }
     return this._db;
+  }
+
+  get boosterService() {
+    if (!this._boosterService) {
+      this._boosterService = new BoosterService();
+    }
+    return this._boosterService;
   }
 
   /**
@@ -136,6 +163,14 @@ class StakingService {
     const { goalService } = await import("./goalService.js");
     const isGoalCompleted = await goalService.isGoalCompleted();
 
+    // Detect and assign boosters for this user
+    try {
+      await this.boosterService.detectAndAssignBoosters(firebaseUid);
+    } catch (error) {
+      console.error(`Error detecting boosters for ${firebaseUid}:`, error);
+      // Continue without boosters if detection fails
+    }
+
     const pool = await this.getPoolData();
 
     let userPos = null;
@@ -184,8 +219,8 @@ class StakingService {
               elapsedSeconds) /
             SECONDS_IN_YEAR;
 
-          // Apply booster multiplier
-          const boosterMultiplier = this._getBoosterMultiplier(
+          // Apply booster multiplier using new BoosterService
+          const boosterMultiplier = this.boosterService.calculateStackedMultiplier(
             userPos.active_boosters || []
           );
           const accruedWithBooster = accruedSinceLastUpdate * boosterMultiplier;
@@ -235,8 +270,8 @@ class StakingService {
         (userPos.principal_amount * ROI_PERCENT * tokenPriceSol) /
         SECONDS_IN_YEAR;
 
-      // Apply booster multiplier
-      const boosterMultiplier = this._getBoosterMultiplier(
+      // Apply booster multiplier using new BoosterService
+      const boosterMultiplier = this.boosterService.calculateStackedMultiplier(
         userPos.active_boosters || []
       );
       totalMiningRate = baseMiningRate * boosterMultiplier;
@@ -263,7 +298,7 @@ class StakingService {
         baseMiningRate: baseMiningRate, // Base SOL/s without boosters
         totalMiningRate: totalMiningRate, // Total SOL/s with boosters
         activeBoosters: userPos?.active_boosters || [],
-        boosterMultiplier: this._getBoosterMultiplier(
+        boosterMultiplier: this.boosterService.calculateStackedMultiplier(
           userPos?.active_boosters || []
         ),
         stakeStartTime: userPos?.stake_start_time?.toMillis() || null,
@@ -732,15 +767,8 @@ class StakingService {
         return false;
       }
 
-      // Get token mint based on network (match frontend logic)
-      const isDevnet = process.env.SOLANA_RPC_URL?.includes("devnet");
-      const tokenMint = new PublicKey(
-        isDevnet
-          ? process.env.MKIN_TOKEN_MINT_DEVNET ||
-            "CARXmxarjsCwvzpmjVB2x4xkAo8fMgsAVUBPREoUGyZm"
-          : process.env.MKIN_TOKEN_MINT ||
-            "BKDGf6DnDHK87GsZpdWXyBqiNdcNb6KnoFcYbWPUhJLA"
-      );
+      // Use network configuration for token mint
+      const tokenMint = this.tokenMint;
       const vaultAddress = new PublicKey(process.env.STAKING_WALLET_ADDRESS);
 
       console.log(`📋 Token Mint: ${tokenMint.toBase58()}`);
@@ -825,15 +853,8 @@ class StakingService {
       const vaultPrivateKey = process.env.STAKING_PRIVATE_KEY;
       if (!vaultPrivateKey) throw new Error("STAKING_PRIVATE_KEY not set");
 
-      // Get token mint based on network (match frontend logic)
-      const isDevnet = process.env.SOLANA_RPC_URL?.includes("devnet");
-      const tokenMint = new PublicKey(
-        isDevnet
-          ? process.env.MKIN_TOKEN_MINT_DEVNET ||
-            "CARXmxarjsCwvzpmjVB2x4xkAo8fMgsAVUBPREoUGyZm"
-          : process.env.MKIN_TOKEN_MINT ||
-            "BKDGf6DnDHK87GsZpdWXyBqiNdcNb6KnoFcYbWPUhJLA"
-      );
+      // Use network configuration for token mint
+      const tokenMint = this.tokenMint;
 
       // Decode vault keypair
       const vaultKeypair = Keypair.fromSecretKey(bs58.decode(vaultPrivateKey));
@@ -1010,37 +1031,16 @@ class StakingService {
 
   /**
    * Helper: Calculate Booster Multiplier
-   * Boosters increase mining rate above base rate
-   *
-   * Tiers:
-   * - Realmkin 1/1 (lowest): 1.25x (25% increase)
-   * - Customized 1/1 (mid-tier): 1.5x (50% increase)
-   * - Realmkin Miner (top-tier): 2.0x (100% increase)
+   * DEPRECATED: Now using BoosterService.calculateStackedMultiplier()
+   * This method is kept for backward compatibility but should not be used
    *
    * @param {Array} activeBoosters - Array of booster objects with type field
    * @returns {number} Total multiplier (1.0 = no boost)
+   * @deprecated Use BoosterService.calculateStackedMultiplier() instead
    */
   _getBoosterMultiplier(activeBoosters = []) {
-    if (!activeBoosters || activeBoosters.length === 0) {
-      return 1.0; // No boost
-    }
-
-    // Find the highest tier booster (only one booster can be active at a time)
-    let maxMultiplier = 1.0;
-
-    for (const booster of activeBoosters) {
-      const type = booster.type?.toLowerCase() || "";
-
-      if (type.includes("realmkin_miner") || type.includes("miner")) {
-        maxMultiplier = Math.max(maxMultiplier, 2.0); // Top tier
-      } else if (type.includes("customized") || type.includes("custom")) {
-        maxMultiplier = Math.max(maxMultiplier, 1.5); // Mid tier
-      } else if (type.includes("realmkin") || type.includes("1/1")) {
-        maxMultiplier = Math.max(maxMultiplier, 1.25); // Lowest tier
-      }
-    }
-
-    return maxMultiplier;
+    console.warn("⚠️ _getBoosterMultiplier() is deprecated. Use BoosterService.calculateStackedMultiplier() instead.");
+    return this.boosterService.calculateStackedMultiplier(activeBoosters);
   }
 }
 
