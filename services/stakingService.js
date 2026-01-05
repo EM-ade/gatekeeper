@@ -164,8 +164,9 @@ class StakingService {
     const isGoalCompleted = await goalService.isGoalCompleted();
 
     // Detect and assign boosters for this user
+    let detectedBoosters = [];
     try {
-      await this.boosterService.detectAndAssignBoosters(firebaseUid);
+      detectedBoosters = await this.boosterService.detectAndAssignBoosters(firebaseUid);
     } catch (error) {
       console.error(`Error detecting boosters for ${firebaseUid}:`, error);
       // Continue without boosters if detection fails
@@ -286,6 +287,11 @@ class StakingService {
       console.log(`   Total: ${totalMiningRate.toFixed(12)} SOL/s`);
     }
 
+    // Use detected boosters if position doesn't exist or has no boosters
+    const activeBoosters = userPos?.active_boosters?.length > 0 
+      ? userPos.active_boosters 
+      : detectedBoosters;
+
     return {
       pool: {
         totalStaked: pool.total_staked,
@@ -297,9 +303,9 @@ class StakingService {
         pendingRewards: pending,
         baseMiningRate: baseMiningRate, // Base SOL/s without boosters
         totalMiningRate: totalMiningRate, // Total SOL/s with boosters
-        activeBoosters: userPos?.active_boosters || [],
+        activeBoosters: activeBoosters,
         boosterMultiplier: this.boosterService.calculateStackedMultiplier(
-          userPos?.active_boosters || []
+          activeBoosters
         ),
         stakeStartTime: userPos?.stake_start_time?.toMillis() || null,
         lastStakeTime: userPos?.last_stake_time?.toMillis() || null,
