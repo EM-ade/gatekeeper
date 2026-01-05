@@ -1,0 +1,3527 @@
+================================================================================
+ONE-TIME TOKEN DISTRIBUTION LOG (External Cron)
+================================================================================
+
+Start Time: 2026-01-05T06:24:25.075Z
+End Time: 2026-01-05T06:29:49.007Z
+Duration: 323.93 seconds
+Total Logs: 524
+Errors: 0
+Warnings: 2
+
+================================================================================
+DETAILED LOGS
+================================================================================
+
+{
+  "timestamp": "2026-01-05T06:24:25.075Z",
+  "level": "INFO",
+  "message": "🎬 One-Time Token Distribution (External Cron Mode) Started",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:25.220Z",
+  "level": "INFO",
+  "message": "🚀 Starting one-time token distribution (External Cron)",
+  "data": {
+    "distributionId": "one_time_mkin_distribution_2025_01_05_6am",
+    "amount": 35000,
+    "dryRun": false,
+    "executionTime": "2026-01-05T06:24:25.220Z"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:24:27.795Z",
+  "level": "INFO",
+  "message": "Found 4 active contracts",
+  "data": {
+    "activeContracts": [
+      "0xbb03b613ede925f17e3ffc437592c66c7c78e317",
+      "89knhxichb2egp2jrgzeqx3b8ntyqhevmu55sydwsnl8",
+      "ezjhzatbqxohjtsamkfsx6fgxcdjyxav85nk7rk79u3z",
+      "etqujifkvvljxdkaobg9jqulnddrct5t4wtdochmvsz"
+    ]
+  }
+}
+{
+  "timestamp": "2026-01-05T06:24:28.655Z",
+  "level": "INFO",
+  "message": "Found 209 users with wallet addresses",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:28.655Z",
+  "level": "INFO",
+  "message": "Processing batch 1/5",
+  "data": {
+    "batchSize": 50,
+    "progress": "0%"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:24:28.655Z",
+  "level": "DEBUG",
+  "message": "Skipping user 7e214bde-1d08-4462-9d5c-36f7f805b242 - invalid wallet: 0x6BE04c08dEA62051d9Ba1876A91469f77e05EE3d",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:28.656Z",
+  "level": "DEBUG",
+  "message": "Skipping user E3NRq2pMvuerDRdU1LATriTAPfR2 - invalid wallet: 0x6BE04c08dEA62051d9Ba1876A91469f77e05EE3d",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:28.656Z",
+  "level": "DEBUG",
+  "message": "Skipping user UpdeCeTCKIexpurrhjp2fMlzj6z1 - invalid wallet: 0xc708cEE52f463d50e4dCf5867a6a5526D04D2191",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:28.656Z",
+  "level": "DEBUG",
+  "message": "Skipping user Ao2S7fRtUpPsvR54pCKaDQqB9aR2 - invalid wallet: 0xdF7469dAFd4b42bd2622dc462b522823aC8d263E",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:29.119Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 2A9orhRpiQyPpvkcKTFEk42FoUyT34xU9AiZmhpiszGc",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:29.848Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 2A9orhRpiQyPpvkcKTFEk42FoUyT34xU9AiZmhpiszGc",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:30.298Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 2KArofRpFCAyBQhjJcD6LKp5nLebrvZikRKhVV1JewVq",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:33.926Z",
+  "level": "DEBUG",
+  "message": "Found 37 MKIN NFTs for 2KArofRpFCAyBQhjJcD6LKp5nLebrvZikRKhVV1JewVq",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:34.385Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 2SVJz2nsvWpJnUsDNT3R6DkYyuST8FwuLJ2NR9Hfofgs",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:34.550Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 2SVJz2nsvWpJnUsDNT3R6DkYyuST8FwuLJ2NR9Hfofgs",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:35.048Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 2XHEAiM62v9QGtk7Jt98AkCMtqd3hzG8UJXqvCmieNZj",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:35.389Z",
+  "level": "DEBUG",
+  "message": "Found 3 MKIN NFTs for 2XHEAiM62v9QGtk7Jt98AkCMtqd3hzG8UJXqvCmieNZj",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:35.868Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 2iXoD8JufqdvhGbW4mC77BcBKDYZqBxkRxqzsTmrBexV",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:36.184Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for 2iXoD8JufqdvhGbW4mC77BcBKDYZqBxkRxqzsTmrBexV",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:36.650Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 2r6sQKDAi5prddjdR8radPzGZoSCetYs21iYAy4L4YMb",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:39.135Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 2r6sQKDAi5prddjdR8radPzGZoSCetYs21iYAy4L4YMb",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:39.590Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 34WprGeJjJhuDqtWswgbZUbYCAKGFppXXkEQTtW2ob3Y",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:39.924Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 34WprGeJjJhuDqtWswgbZUbYCAKGFppXXkEQTtW2ob3Y",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:40.389Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 34gGL86jHuq14VYdkvVNDtUCFk6er5cKu3nY4jd7M3gV",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:40.738Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 34gGL86jHuq14VYdkvVNDtUCFk6er5cKu3nY4jd7M3gV",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:41.228Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 3B5pX6JGfZJuLuvC55xKyw9HVSKsD6GATJuMJdBDgGZU",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:41.647Z",
+  "level": "DEBUG",
+  "message": "Found 30 MKIN NFTs for 3B5pX6JGfZJuLuvC55xKyw9HVSKsD6GATJuMJdBDgGZU",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:42.113Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 3Qm6PdtNJ2KcKVWKmkkWiazXoGu7YaLMJZqGWxhHT8jh",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:42.452Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 3Qm6PdtNJ2KcKVWKmkkWiazXoGu7YaLMJZqGWxhHT8jh",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:43.009Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 3X95CoEczSN7XxrFqNTHF4JZ7Rki5HC4JjxYsBs7fwHb",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:43.305Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for 3X95CoEczSN7XxrFqNTHF4JZ7Rki5HC4JjxYsBs7fwHb",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:43.759Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 3izMqR155Ce6t4ChtWYcjAe7ptZigs2TtBjhWckGP44i",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:46.036Z",
+  "level": "DEBUG",
+  "message": "Found 2 MKIN NFTs for 3izMqR155Ce6t4ChtWYcjAe7ptZigs2TtBjhWckGP44i",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:46.508Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 3nv7tnoznV8i7te6gNU2KzBgPLDL3pFKa6P82gXtdtWv",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:46.801Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for 3nv7tnoznV8i7te6gNU2KzBgPLDL3pFKa6P82gXtdtWv",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:47.288Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 3xALCAWami4H4LpMVjxnbqKcaEZ8jqqUm7aG8jUtC9Wq",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:47.647Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 3xALCAWami4H4LpMVjxnbqKcaEZ8jqqUm7aG8jUtC9Wq",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:48.108Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 41sMPxGrazoite82AhkGVaDTnwF4HxjFMnzAiBdMfcFe",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:48.268Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 41sMPxGrazoite82AhkGVaDTnwF4HxjFMnzAiBdMfcFe",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:48.738Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 42SFHgg71xCPBaEzupoftDvDY5SJaQ3Jrk9eqRBKgNN5",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:49.344Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 42SFHgg71xCPBaEzupoftDvDY5SJaQ3Jrk9eqRBKgNN5",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:49.818Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 43PdN7t1jGKFaYNEhZNRPWUV7b6YUDqdgEqoi4eM1aA4",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:50.589Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for 43PdN7t1jGKFaYNEhZNRPWUV7b6YUDqdgEqoi4eM1aA4",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:51.068Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 4FXctNx5RqFQSEUSYpKHEtuwx2F8xB3qp5JKBFgF5Lq1",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:51.458Z",
+  "level": "DEBUG",
+  "message": "Found 7 MKIN NFTs for 4FXctNx5RqFQSEUSYpKHEtuwx2F8xB3qp5JKBFgF5Lq1",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:51.936Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 4KvXSzL8T1fhr9ezznDc5Z7pnowBdWwawpLJ89JR1kiT",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:52.320Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for 4KvXSzL8T1fhr9ezznDc5Z7pnowBdWwawpLJ89JR1kiT",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:52.769Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 4QFh45rTR2XuYjnn7PzhbMxX9QNhRAoJHT2zESN7zRBZ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:54.033Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 4QFh45rTR2XuYjnn7PzhbMxX9QNhRAoJHT2zESN7zRBZ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:54.479Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 4RBYirZuimpvrgGeBn7LM9XY2hwZsda5BLJaKuC6oNwv",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:54.862Z",
+  "level": "DEBUG",
+  "message": "Found 5 MKIN NFTs for 4RBYirZuimpvrgGeBn7LM9XY2hwZsda5BLJaKuC6oNwv",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:55.400Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 4bD7yoJkqTAxrj5stjAx1Nq8LNYdvMTxLBaAGHsmqgRX",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:55.936Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 4bD7yoJkqTAxrj5stjAx1Nq8LNYdvMTxLBaAGHsmqgRX",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:56.388Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 4bGB7Q6nNjaeUPcniZDHhRDVorjYoeFze1aG93sn6PyK",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:56.573Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 4bGB7Q6nNjaeUPcniZDHhRDVorjYoeFze1aG93sn6PyK",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:57.033Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 4cZ5yM8zRKUfTKFmAn53tu17P2X6EiU1ANPxsP37vbY9",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:57.378Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 4cZ5yM8zRKUfTKFmAn53tu17P2X6EiU1ANPxsP37vbY9",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:57.838Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 4fNqdQRDnKEpVvxvozNftiS67AHM2wLvKLNvaHkeuAWB",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:58.166Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 4fNqdQRDnKEpVvxvozNftiS67AHM2wLvKLNvaHkeuAWB",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:24:58.588Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 4ghcW6CoJd9zs8K4AD7Rj9bvAE8NZWotcJM7fWnt4vwb",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:09.423Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 4ghcW6CoJd9zs8K4AD7Rj9bvAE8NZWotcJM7fWnt4vwb",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:09.868Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 4mHpjYdrBDa5REkpCSnv9GsFNerXhDdTNG5pS8jhyxEe",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:10.211Z",
+  "level": "DEBUG",
+  "message": "Found 3 MKIN NFTs for 4mHpjYdrBDa5REkpCSnv9GsFNerXhDdTNG5pS8jhyxEe",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:10.709Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 4meAqZQ82ujJ1Ew1Dmhh4Kx3saUYcFDCzuee8nyidwDf",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:11.474Z",
+  "level": "DEBUG",
+  "message": "Found 90 MKIN NFTs for 4meAqZQ82ujJ1Ew1Dmhh4Kx3saUYcFDCzuee8nyidwDf",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:11.948Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 4nJgRUV472gLXrh2FqvWRcUouReEq5aMDqBQSsd6ABxu",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:12.417Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for 4nJgRUV472gLXrh2FqvWRcUouReEq5aMDqBQSsd6ABxu",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:12.868Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 4qT2gua41RHq8Q1dS2WPmrGGG1Xb8kXsGnAwscQkcG8U",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:13.663Z",
+  "level": "DEBUG",
+  "message": "Found 6 MKIN NFTs for 4qT2gua41RHq8Q1dS2WPmrGGG1Xb8kXsGnAwscQkcG8U",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:14.099Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 4qpbCiBS6XL26jjufhfPsdvRd6p6uc2VEXsUC2mXh5h5",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:14.386Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 4qpbCiBS6XL26jjufhfPsdvRd6p6uc2VEXsUC2mXh5h5",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:14.844Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 51Aeb6XE819mH7SVSmaejN318uKkehM1W6TBduq1nsjX",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:15.005Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 51Aeb6XE819mH7SVSmaejN318uKkehM1W6TBduq1nsjX",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:15.448Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 51Aeb6XE819mH7SVSmaejN318uKkehM1W6TBduq1nsjX",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:15.616Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 51Aeb6XE819mH7SVSmaejN318uKkehM1W6TBduq1nsjX",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:16.078Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 5322JYA6Vd6ofsApFGiwFwQmfdCDRthAqZ8sEiuVPAbh",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:16.435Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 5322JYA6Vd6ofsApFGiwFwQmfdCDRthAqZ8sEiuVPAbh",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:16.898Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 59ZZ5zfjcL5CuxeS1LeNPWq7oBpPif1DWigRkHLFAKpq",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:17.070Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 59ZZ5zfjcL5CuxeS1LeNPWq7oBpPif1DWigRkHLFAKpq",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:17.518Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 5MUwAryca7czMm2XtxVWMyVGPpcLRmXkyPK571AiLArk",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:17.686Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 5MUwAryca7czMm2XtxVWMyVGPpcLRmXkyPK571AiLArk",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:18.139Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 5XTZ7TVNCQ943ubtx7MUnPFdEQ4nuPJxv2tsqEhGikEv",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:18.454Z",
+  "level": "DEBUG",
+  "message": "Found 2 MKIN NFTs for 5XTZ7TVNCQ943ubtx7MUnPFdEQ4nuPJxv2tsqEhGikEv",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:18.888Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 5XTZ7TVNCQ943ubtx7MUnPFdEQ4nuPJxv2tsqEhGikEv",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:19.219Z",
+  "level": "DEBUG",
+  "message": "Found 2 MKIN NFTs for 5XTZ7TVNCQ943ubtx7MUnPFdEQ4nuPJxv2tsqEhGikEv",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:19.669Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 5hTKvKrKYW8NZQZjD1YuQU8G6eT3VyNu4KKMPcZnyy5i",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:21.900Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 5hTKvKrKYW8NZQZjD1YuQU8G6eT3VyNu4KKMPcZnyy5i",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:22.345Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 5va57Jiu7NcgaSA3c3ySn2uMgf5NMcNqvRNBren8HCLK",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:22.688Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 5va57Jiu7NcgaSA3c3ySn2uMgf5NMcNqvRNBren8HCLK",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:23.148Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 5znjSzeNfxhMfHsrbuTjcLY3yWH9U2TQ2nUjwUScCM2D",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:23.659Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 5znjSzeNfxhMfHsrbuTjcLY3yWH9U2TQ2nUjwUScCM2D",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:24.101Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 62DpHkt3h7r6CJECjtRQUoMnm3SJxUTzF5kNUGjs2325",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:24.832Z",
+  "level": "DEBUG",
+  "message": "Found 5 MKIN NFTs for 62DpHkt3h7r6CJECjtRQUoMnm3SJxUTzF5kNUGjs2325",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:25.278Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 62HrV618tyzVVbJa4Vyf23Hcy1LcYGXqVe8NXXqcq6yF",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:25.605Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for 62HrV618tyzVVbJa4Vyf23Hcy1LcYGXqVe8NXXqcq6yF",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:26.049Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 62vqPSViMpWBxz6oZD8XQ6GNDHdk1aJepx11XsJvKSyz",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:26.576Z",
+  "level": "DEBUG",
+  "message": "Found 10 MKIN NFTs for 62vqPSViMpWBxz6oZD8XQ6GNDHdk1aJepx11XsJvKSyz",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:27.046Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 65P4VVeA6v3tjEAAAQT97C3GjPXBYmfSwtpJUiHuReeP",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:27.211Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 65P4VVeA6v3tjEAAAQT97C3GjPXBYmfSwtpJUiHuReeP",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:27.749Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 69DU9C3iEMevkeMR94GhFPCRE1jQ8n69N5VnHfvYiEuy",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:27.919Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 69DU9C3iEMevkeMR94GhFPCRE1jQ8n69N5VnHfvYiEuy",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:27.921Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user A8lwFrRNThdUB2uXHnFiISaZx9p2",
+  "data": {
+    "nftCount": 37,
+    "walletAddress": "2KArofRpFCAyBQhjJcD6LKp5nLebrvZikRKhVV1JewVq"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:25:27.922Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user fq9Q2vZtwuUBeZoyDtyoAXEaDCw1",
+  "data": {
+    "nftCount": 3,
+    "walletAddress": "2XHEAiM62v9QGtk7Jt98AkCMtqd3hzG8UJXqvCmieNZj"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:25:27.922Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user lAovYNW93uNotA1phFL9S9zj8ZA2",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "2iXoD8JufqdvhGbW4mC77BcBKDYZqBxkRxqzsTmrBexV"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:25:27.923Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user UTI9HIE18bWVRnUap4yE2NAcHF73",
+  "data": {
+    "nftCount": 30,
+    "walletAddress": "3B5pX6JGfZJuLuvC55xKyw9HVSKsD6GATJuMJdBDgGZU"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:25:27.923Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user 3x95coeczsn7xxrfqnthf4jz7rki5hc4jjxysbs7fwhb",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "3X95CoEczSN7XxrFqNTHF4JZ7Rki5HC4JjxYsBs7fwHb"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:25:27.924Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user jVPklc9YT8NAkhdktDY4fMQu1R63",
+  "data": {
+    "nftCount": 2,
+    "walletAddress": "3izMqR155Ce6t4ChtWYcjAe7ptZigs2TtBjhWckGP44i"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:25:27.924Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user Y4Cly5FpksYdj49NU0eAUrHDBLq1",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "3nv7tnoznV8i7te6gNU2KzBgPLDL3pFKa6P82gXtdtWv"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:25:27.924Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user 0FEiTKdpjQcssdQdYpnLg7WWjJ92",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "43PdN7t1jGKFaYNEhZNRPWUV7b6YUDqdgEqoi4eM1aA4"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:25:27.925Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user 9FqttnWQwYcnsCb8xu1uDvL9Z7y1",
+  "data": {
+    "nftCount": 7,
+    "walletAddress": "4FXctNx5RqFQSEUSYpKHEtuwx2F8xB3qp5JKBFgF5Lq1"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:25:27.925Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user RVykdqmWtAdtpW82APPrxVhpNwz1",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "4KvXSzL8T1fhr9ezznDc5Z7pnowBdWwawpLJ89JR1kiT"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:25:27.926Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user MHHyqxibzyZSazdSmOf0VYJfpw83",
+  "data": {
+    "nftCount": 5,
+    "walletAddress": "4RBYirZuimpvrgGeBn7LM9XY2hwZsda5BLJaKuC6oNwv"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:25:27.926Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user KIXueUdQFleM9HJkZDlTeQQMtTx2",
+  "data": {
+    "nftCount": 3,
+    "walletAddress": "4mHpjYdrBDa5REkpCSnv9GsFNerXhDdTNG5pS8jhyxEe"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:25:27.927Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user TG2FGWgy4DQm3YftMnpr77cRxbT2",
+  "data": {
+    "nftCount": 90,
+    "walletAddress": "4meAqZQ82ujJ1Ew1Dmhh4Kx3saUYcFDCzuee8nyidwDf"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:25:27.927Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user ZNiKwdRvCkTwlUMPHaQfxyyOsn02",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "4nJgRUV472gLXrh2FqvWRcUouReEq5aMDqBQSsd6ABxu"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:25:27.928Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user TtDGczulFyNtEwxki833Y3QL9ux1",
+  "data": {
+    "nftCount": 6,
+    "walletAddress": "4qT2gua41RHq8Q1dS2WPmrGGG1Xb8kXsGnAwscQkcG8U"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:25:27.928Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user Tk2etnIuyRgI4fpDZ773G8dJI5t2",
+  "data": {
+    "nftCount": 2,
+    "walletAddress": "5XTZ7TVNCQ943ubtx7MUnPFdEQ4nuPJxv2tsqEhGikEv"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:25:27.928Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user fh4Hk5wI7EUOfoAtvgdccLOBNG63",
+  "data": {
+    "nftCount": 2,
+    "walletAddress": "5XTZ7TVNCQ943ubtx7MUnPFdEQ4nuPJxv2tsqEhGikEv"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:25:27.929Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user jCHtfWmFeqSjL0HnD2NuODMuJmg2",
+  "data": {
+    "nftCount": 5,
+    "walletAddress": "62DpHkt3h7r6CJECjtRQUoMnm3SJxUTzF5kNUGjs2325"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:25:27.931Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user BnMPGUj12bY9p6m0OoNIpsjMxyv1",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "62HrV618tyzVVbJa4Vyf23Hcy1LcYGXqVe8NXXqcq6yF"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:25:27.933Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user RDKnPGaK43PeEuBvxsbGNIDWdYM2",
+  "data": {
+    "nftCount": 10,
+    "walletAddress": "62vqPSViMpWBxz6oZD8XQ6GNDHdk1aJepx11XsJvKSyz"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:25:28.514Z",
+  "level": "SUCCESS",
+  "message": "Batch committed successfully: 20 distributions",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:30.524Z",
+  "level": "INFO",
+  "message": "Processing batch 2/5",
+  "data": {
+    "batchSize": 50,
+    "progress": "24%"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:25:31.009Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 6BA5N8JR32PYAuggyk6kYLAWazoWoidDn9xV2mqLSg2",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:31.879Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 6BA5N8JR32PYAuggyk6kYLAWazoWoidDn9xV2mqLSg2",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:32.349Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 6CEeJBSumMVJXcjhemqMeGE8pJJ5JzEhL3zZhLr9RrjW",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:32.986Z",
+  "level": "DEBUG",
+  "message": "Found 7 MKIN NFTs for 6CEeJBSumMVJXcjhemqMeGE8pJJ5JzEhL3zZhLr9RrjW",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:33.441Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 6SCPx6NLDhqUTwhqNqY9VsNRK6PPvVTvdu2aLoc5TCaR",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:33.785Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 6SCPx6NLDhqUTwhqNqY9VsNRK6PPvVTvdu2aLoc5TCaR",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:34.231Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 6THB6Ft37sv92szCLsoWtkvC2TrVqbufT5UK6MM8AMb",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:34.516Z",
+  "level": "DEBUG",
+  "message": "Found 5 MKIN NFTs for 6THB6Ft37sv92szCLsoWtkvC2TrVqbufT5UK6MM8AMb",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:34.954Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 6c41ncQEWyZsT7PSGEXTexXkAmppXpYVvk6uem751pRw",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:38.073Z",
+  "level": "DEBUG",
+  "message": "Found 35 MKIN NFTs for 6c41ncQEWyZsT7PSGEXTexXkAmppXpYVvk6uem751pRw",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:38.520Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 6n88TDqQVee4UTySrQfhgTHzsqDoq24P6ieZEZAe5rhX",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:39.947Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 6n88TDqQVee4UTySrQfhgTHzsqDoq24P6ieZEZAe5rhX",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:40.399Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 6qA54CyXk7BQHc8hMMxAJLP3orfnVA2PywrTR3tFPE7r",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:44.039Z",
+  "level": "DEBUG",
+  "message": "Found 30 MKIN NFTs for 6qA54CyXk7BQHc8hMMxAJLP3orfnVA2PywrTR3tFPE7r",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:44.484Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 6wotd5uFt9sso6QPep8dZA5Rh6hrPcaH6gy2wjvqNwzQ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:44.815Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for 6wotd5uFt9sso6QPep8dZA5Rh6hrPcaH6gy2wjvqNwzQ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:45.269Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 71dqZGwA7NRCN7u8eTp2mq9KK7KZbSrcewMKHwp4pSVL",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:45.838Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for 71dqZGwA7NRCN7u8eTp2mq9KK7KZbSrcewMKHwp4pSVL",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:46.299Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 7CMu7FcGRwq9CmYjUDSRiNXtRhkvKytEk44yCC12ny9L",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:49.702Z",
+  "level": "DEBUG",
+  "message": "Found 3 MKIN NFTs for 7CMu7FcGRwq9CmYjUDSRiNXtRhkvKytEk44yCC12ny9L",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:50.144Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 7CS3VbU8KpXu9VfM3BxhRtcMgk4uh3NjpXqFExcpNc4t",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:50.469Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for 7CS3VbU8KpXu9VfM3BxhRtcMgk4uh3NjpXqFExcpNc4t",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:50.999Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 7NNS74sZxN8FnLm5648yUH8UpjqrMFrLfiMV767TkmFg",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:51.312Z",
+  "level": "DEBUG",
+  "message": "Found 2 MKIN NFTs for 7NNS74sZxN8FnLm5648yUH8UpjqrMFrLfiMV767TkmFg",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:51.749Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 7QjrrtVgrJgXAcMw7dwCRo69zjRivvbLarpxEwP89iYP",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:52.235Z",
+  "level": "DEBUG",
+  "message": "Found 101 MKIN NFTs for 7QjrrtVgrJgXAcMw7dwCRo69zjRivvbLarpxEwP89iYP",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:52.679Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 7SmcgUd56GnjV5cd1eUXhcjpuKmXFfBadeoSiPqynuxw",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:52.942Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 7SmcgUd56GnjV5cd1eUXhcjpuKmXFfBadeoSiPqynuxw",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:53.396Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 7Z7kPJCZDdWhv8SuRqKd4LVjLyGp2r5H9g431C9FVgDo",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:53.554Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 7Z7kPJCZDdWhv8SuRqKd4LVjLyGp2r5H9g431C9FVgDo",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:54.035Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 7ZkwGA57ZBXpb4M1wwtSwLXdyqKWZH7beBR8Wii9UYgr",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:54.804Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 7ZkwGA57ZBXpb4M1wwtSwLXdyqKWZH7beBR8Wii9UYgr",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:55.241Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 7bh4Yzcvhs4bwMgDtr1bBTiQvN8vrhMEcXjRmTaYPYsJ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:56.918Z",
+  "level": "DEBUG",
+  "message": "Found 32 MKIN NFTs for 7bh4Yzcvhs4bwMgDtr1bBTiQvN8vrhMEcXjRmTaYPYsJ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:57.359Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 7chTzzr1LbSrVM9XX9ELpuL93xk89DM6W63ev1ShtpKK",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:57.538Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 7chTzzr1LbSrVM9XX9ELpuL93xk89DM6W63ev1ShtpKK",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:57.969Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 7saRfPotj6uGoXC2txwEmdpZyzT2eRRZEXnfy372PD7",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:58.380Z",
+  "level": "DEBUG",
+  "message": "Found 8 MKIN NFTs for 7saRfPotj6uGoXC2txwEmdpZyzT2eRRZEXnfy372PD7",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:58.824Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 7saRfPotj6uGoXC2txwEmdpZyzT2eRRZEXnfy372PD7",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:59.213Z",
+  "level": "DEBUG",
+  "message": "Found 8 MKIN NFTs for 7saRfPotj6uGoXC2txwEmdpZyzT2eRRZEXnfy372PD7",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:25:59.650Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 7vGTLJjADVie5yBq2533m7M9JWj8FC1fTHkEjD5VQfy2",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:00.268Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for 7vGTLJjADVie5yBq2533m7M9JWj8FC1fTHkEjD5VQfy2",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:00.724Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 7z7aM79YVDAtaJNKHpQP13fsdRRuVrisfeGnXj3JPres",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:01.049Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 7z7aM79YVDAtaJNKHpQP13fsdRRuVrisfeGnXj3JPres",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:01.498Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 8ABDRJSgC6NQya8Zq8sH8xYw3r6ahshmt3mFSWG9gade",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:01.676Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 8ABDRJSgC6NQya8Zq8sH8xYw3r6ahshmt3mFSWG9gade",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:02.139Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 8J7WyPs8bPo27Zo5ULQx98b81FdzjzgZzbUJA1jK5z33",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:02.480Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 8J7WyPs8bPo27Zo5ULQx98b81FdzjzgZzbUJA1jK5z33",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:02.979Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 8R82yFWspyDY7BsEzTVFKBFACKv8546m46sMc91q83vt",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:10.715Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 8R82yFWspyDY7BsEzTVFKBFACKv8546m46sMc91q83vt",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:11.159Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 8SbXCZVGi54Q3EQY6WWb4HUqGnkq5Pw2uZXNj6NVYGjt",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:11.352Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 8SbXCZVGi54Q3EQY6WWb4HUqGnkq5Pw2uZXNj6NVYGjt",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:11.784Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 8bUNgN6emuLNPxLokkCu6xRJkBV7LXnnvQZtBZpCeb9K",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:11.968Z",
+  "level": "DEBUG",
+  "message": "Found 4 MKIN NFTs for 8bUNgN6emuLNPxLokkCu6xRJkBV7LXnnvQZtBZpCeb9K",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:12.419Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 8gYJQw9FodoxbaKJ42Bv3sxrEYpZoPzaXEncYCzmP7Fm",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:13.377Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 8gYJQw9FodoxbaKJ42Bv3sxrEYpZoPzaXEncYCzmP7Fm",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:13.841Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 8izcbrzhaNnv21QX15yWrw54zyxaGRs9EV8D1ujBUeye",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:14.180Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 8izcbrzhaNnv21QX15yWrw54zyxaGRs9EV8D1ujBUeye",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:14.629Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 8kNCEnRqr32Y8Q5wJVBNBNDTgCX1MFfe32efcnnbd5f4",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:17.611Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 8kNCEnRqr32Y8Q5wJVBNBNDTgCX1MFfe32efcnnbd5f4",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:18.050Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 8w1dD5Von2GBTa9cVASeC2A9F3gRrCqHA7QPds5pfXsM",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:18.207Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 8w1dD5Von2GBTa9cVASeC2A9F3gRrCqHA7QPds5pfXsM",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:18.661Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 98vJraBpTmT2hmFxfHchp1Bd7Wg5UN17ZKUuGQKfPi1r",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:24.230Z",
+  "level": "DEBUG",
+  "message": "Found 28 MKIN NFTs for 98vJraBpTmT2hmFxfHchp1Bd7Wg5UN17ZKUuGQKfPi1r",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:24.669Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 9FQevzPq6QgE3LAwfubvDZFZ8scF2htkEkRi3Srjem54",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:27.510Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 9FQevzPq6QgE3LAwfubvDZFZ8scF2htkEkRi3Srjem54",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:27.956Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 9TNeyU5ckxd7PEyuK74fng7HNUcMkmH6ZeZwQ9gAhEr4",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:29.433Z",
+  "level": "DEBUG",
+  "message": "Found 2 MKIN NFTs for 9TNeyU5ckxd7PEyuK74fng7HNUcMkmH6ZeZwQ9gAhEr4",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:29.864Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 9r7e8PBhYfhj3EXbEvcrGn28p277ggeXi2sb1kLaZiqD",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:30.172Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for 9r7e8PBhYfhj3EXbEvcrGn28p277ggeXi2sb1kLaZiqD",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:30.619Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 9unK3D9u5WFj9o7Za1fxPEs6wsW3nvRnTLv6DhBkgC5U",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:30.961Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 9unK3D9u5WFj9o7Za1fxPEs6wsW3nvRnTLv6DhBkgC5U",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:31.409Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 9xv6hvfknciyPNLcpnZiQ6TwmEHSmADRk2AVpcPzoxUr",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:31.739Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 9xv6hvfknciyPNLcpnZiQ6TwmEHSmADRk2AVpcPzoxUr",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:32.179Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 9yDcvLcgryqj2WHUjj2VcwoiFa3D6YBKrWj6vhHSvAfe",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:32.541Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 9yDcvLcgryqj2WHUjj2VcwoiFa3D6YBKrWj6vhHSvAfe",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:32.990Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: 9yHKXJzUzBfYK1C6ApaXpU5r837cLg93D7kq6XwjFLzi",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:33.323Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for 9yHKXJzUzBfYK1C6ApaXpU5r837cLg93D7kq6XwjFLzi",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:33.748Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: A1d3dKDdT5ZBDcTw1eyZSXsioUKNmwpsQ8HHhBo24L7M",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:34.078Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for A1d3dKDdT5ZBDcTw1eyZSXsioUKNmwpsQ8HHhBo24L7M",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:34.539Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: A2Ht4DaNzfauPH2YUvcnPiYio2LLuypG3YeRe3HTTUyP",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:34.883Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for A2Ht4DaNzfauPH2YUvcnPiYio2LLuypG3YeRe3HTTUyP",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:35.353Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: A84s2Q6hserur21bQPQGWmec6jdfWxnAi2vBS72iNKe7",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:35.751Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for A84s2Q6hserur21bQPQGWmec6jdfWxnAi2vBS72iNKe7",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:36.190Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: A8MxivMwasM3YnbA65tUbZEtmtVGFkgtZLj1BA9L8ssa",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:36.499Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for A8MxivMwasM3YnbA65tUbZEtmtVGFkgtZLj1BA9L8ssa",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:36.958Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: A8SaZGRh3zDE38vQU7bcMmgfzY9CHNMrxYzv9wJKpbjK",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:37.191Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for A8SaZGRh3zDE38vQU7bcMmgfzY9CHNMrxYzv9wJKpbjK",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:37.656Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: A9KbyR1LwABYWDsTP4cLMSTd51qPuvAEcnjzt4v9DWeG",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:38.066Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for A9KbyR1LwABYWDsTP4cLMSTd51qPuvAEcnjzt4v9DWeG",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:38.609Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: ABjnax7QfDmG6wR2KJoNc3UyiouwTEZ3b5tnTrLLyNSp",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:38.908Z",
+  "level": "DEBUG",
+  "message": "Found 3 MKIN NFTs for ABjnax7QfDmG6wR2KJoNc3UyiouwTEZ3b5tnTrLLyNSp",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:39.459Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: ABjnax7QfDmG6wR2KJoNc3UyiouwTEZ3b5tnTrLLyNSp",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:39.645Z",
+  "level": "DEBUG",
+  "message": "Found 3 MKIN NFTs for ABjnax7QfDmG6wR2KJoNc3UyiouwTEZ3b5tnTrLLyNSp",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:40.098Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: ACHaVt3CjANuUQ4T9ox55ye7tRsPssWsXkZRyyoKFZ79",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:40.307Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for ACHaVt3CjANuUQ4T9ox55ye7tRsPssWsXkZRyyoKFZ79",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:40.753Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: AEhzp2c5qdTsTBJUwxh7GpV3dPJB4gX7JCkyEC7ogJtR",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:41.059Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for AEhzp2c5qdTsTBJUwxh7GpV3dPJB4gX7JCkyEC7ogJtR",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:41.533Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: AGLYBLZTHJqSByDd6omAHAg1VYhaAVgsoSnThZqDqvzo",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:42.421Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for AGLYBLZTHJqSByDd6omAHAg1VYhaAVgsoSnThZqDqvzo",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:42.422Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user T8nF4M1MPTN447M5fn4TKsMuSiP2",
+  "data": {
+    "nftCount": 7,
+    "walletAddress": "6CEeJBSumMVJXcjhemqMeGE8pJJ5JzEhL3zZhLr9RrjW"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:26:42.422Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user PGCztWMi7gOX0rgRA1MR9Dd8PCn2",
+  "data": {
+    "nftCount": 5,
+    "walletAddress": "6THB6Ft37sv92szCLsoWtkvC2TrVqbufT5UK6MM8AMb"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:26:42.423Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user RpyWp4ZtZfM3HeSGU2ddexDP4u63",
+  "data": {
+    "nftCount": 35,
+    "walletAddress": "6c41ncQEWyZsT7PSGEXTexXkAmppXpYVvk6uem751pRw"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:26:42.423Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user wREGQ0SBQgSeUu1Expu4sZ9hHuz2",
+  "data": {
+    "nftCount": 30,
+    "walletAddress": "6qA54CyXk7BQHc8hMMxAJLP3orfnVA2PywrTR3tFPE7r"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:26:42.424Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user 53rJxgQnfqdZjwEXRJk5Xe6ICdg1",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "6wotd5uFt9sso6QPep8dZA5Rh6hrPcaH6gy2wjvqNwzQ"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:26:42.424Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user zq0d5uplJ0ONGegdjFhGYDFNbzg2",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "71dqZGwA7NRCN7u8eTp2mq9KK7KZbSrcewMKHwp4pSVL"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:26:42.424Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user RpFmEgw0WDUSZrKLBppQGBIZf2E3",
+  "data": {
+    "nftCount": 3,
+    "walletAddress": "7CMu7FcGRwq9CmYjUDSRiNXtRhkvKytEk44yCC12ny9L"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:26:42.425Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user PWa7UsBrrdcibpeki3x2DEsnoxb2",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "7CS3VbU8KpXu9VfM3BxhRtcMgk4uh3NjpXqFExcpNc4t"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:26:42.425Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user BjVZQZtMfGUIrC4eIpDAu2mup3A2",
+  "data": {
+    "nftCount": 2,
+    "walletAddress": "7NNS74sZxN8FnLm5648yUH8UpjqrMFrLfiMV767TkmFg"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:26:42.425Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user wX93H0WEZPPCt6w4VcvEMVYK7Mx1",
+  "data": {
+    "nftCount": 101,
+    "walletAddress": "7QjrrtVgrJgXAcMw7dwCRo69zjRivvbLarpxEwP89iYP"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:26:42.426Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user hftzjun911swbytyil6two3jwxfu3rmbq6rawsxhaebf",
+  "data": {
+    "nftCount": 32,
+    "walletAddress": "7bh4Yzcvhs4bwMgDtr1bBTiQvN8vrhMEcXjRmTaYPYsJ"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:26:42.426Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user 4Lvhc1LBarbkFpHbKRaA9pQnPjx2",
+  "data": {
+    "nftCount": 8,
+    "walletAddress": "7saRfPotj6uGoXC2txwEmdpZyzT2eRRZEXnfy372PD7"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:26:42.426Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user YGaJwVY5eJe1KCxrSuM1v9hYRVm1",
+  "data": {
+    "nftCount": 8,
+    "walletAddress": "7saRfPotj6uGoXC2txwEmdpZyzT2eRRZEXnfy372PD7"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:26:42.427Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user 8JjDaN058IbS5FI5psTkCAGHtIE3",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "7vGTLJjADVie5yBq2533m7M9JWj8FC1fTHkEjD5VQfy2"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:26:42.427Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user WlpKOOxAQvZfL9f129IM0sVHMXK2",
+  "data": {
+    "nftCount": 4,
+    "walletAddress": "8bUNgN6emuLNPxLokkCu6xRJkBV7LXnnvQZtBZpCeb9K"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:26:42.428Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user Roq8iCh7QASw40NlhZ4hpRRnEaC3",
+  "data": {
+    "nftCount": 28,
+    "walletAddress": "98vJraBpTmT2hmFxfHchp1Bd7Wg5UN17ZKUuGQKfPi1r"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:26:42.428Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user UUkEo5d8o6eInw1aVFxHUtOFyff1",
+  "data": {
+    "nftCount": 2,
+    "walletAddress": "9TNeyU5ckxd7PEyuK74fng7HNUcMkmH6ZeZwQ9gAhEr4"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:26:42.429Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user 9r7e8pbhyfhj3exbevcrgn28p277ggexi2sb1klaziqd",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "9r7e8PBhYfhj3EXbEvcrGn28p277ggeXi2sb1kLaZiqD"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:26:42.429Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user ENCNIJBUtfecaJNSV308Oj2Yrvb2",
+  "data": {
+    "nftCount": 3,
+    "walletAddress": "ABjnax7QfDmG6wR2KJoNc3UyiouwTEZ3b5tnTrLLyNSp"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:26:42.429Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user QQwvgHf3HVa7dBBuQxE5oXcx5UN2",
+  "data": {
+    "nftCount": 3,
+    "walletAddress": "ABjnax7QfDmG6wR2KJoNc3UyiouwTEZ3b5tnTrLLyNSp"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:26:42.945Z",
+  "level": "SUCCESS",
+  "message": "Batch committed successfully: 20 distributions",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:44.956Z",
+  "level": "INFO",
+  "message": "Processing batch 3/5",
+  "data": {
+    "batchSize": 50,
+    "progress": "48%"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:26:45.406Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: ALPF8Qy7jrkoHHE4T4HThXj3QBZzh3Gq5P46WyWRWbbV",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:45.759Z",
+  "level": "DEBUG",
+  "message": "Found 7 MKIN NFTs for ALPF8Qy7jrkoHHE4T4HThXj3QBZzh3Gq5P46WyWRWbbV",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:46.199Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: ALPF8Qy7jrkoHHE4T4HThXj3QBZzh3Gq5P46WyWRWbbV",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:46.543Z",
+  "level": "DEBUG",
+  "message": "Found 7 MKIN NFTs for ALPF8Qy7jrkoHHE4T4HThXj3QBZzh3Gq5P46WyWRWbbV",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:46.991Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: APt5LFBfLzE9Sn6UUg31hpU9hpZdCKyK8HAm9NZNrz6K",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:47.164Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for APt5LFBfLzE9Sn6UUg31hpU9hpZdCKyK8HAm9NZNrz6K",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:47.619Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: ATQqZ6akEWVaiN6z9ZT5BAAziXiqcS4UEdND6WDD4BaD",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:50.587Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for ATQqZ6akEWVaiN6z9ZT5BAAziXiqcS4UEdND6WDD4BaD",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:51.098Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: AU89wLArkPjXEAQAkmApM6EkbR1ZP9r8TpjE5VaVE3eC",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:51.921Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for AU89wLArkPjXEAQAkmApM6EkbR1ZP9r8TpjE5VaVE3eC",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:26:52.430Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: AikwwvmQuy6rqKWef93CsLcmKzcrooWyEWEyXGYvTtbY",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:01.003Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for AikwwvmQuy6rqKWef93CsLcmKzcrooWyEWEyXGYvTtbY",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:01.457Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: AsRjkNc3xeVhLHWJ1ejpdmPzAUYBo1vxo3mdWR3XznsC",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:01.821Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for AsRjkNc3xeVhLHWJ1ejpdmPzAUYBo1vxo3mdWR3XznsC",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:02.263Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: AtnRwmxvKK1hJMBdnuWcWfMED6if2B4tUNKB1NmYSH87",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:03.927Z",
+  "level": "DEBUG",
+  "message": "Found 5 MKIN NFTs for AtnRwmxvKK1hJMBdnuWcWfMED6if2B4tUNKB1NmYSH87",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:04.369Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: AwdCuJhuyet8qpcpdToJ5RY5c6FtQZpR2NN1tfPVVvNT",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:07.421Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for AwdCuJhuyet8qpcpdToJ5RY5c6FtQZpR2NN1tfPVVvNT",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:07.880Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: Az4L3HDbirViAhSaWp7JMEkTbKbDG78WM28TcN816GJH",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:08.209Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for Az4L3HDbirViAhSaWp7JMEkTbKbDG78WM28TcN816GJH",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:08.650Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: B138FAJujdkJwnyYr8nL6ZLh7VUKSPVgoSrxaF6xg4qd",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:08.975Z",
+  "level": "DEBUG",
+  "message": "Found 34 MKIN NFTs for B138FAJujdkJwnyYr8nL6ZLh7VUKSPVgoSrxaF6xg4qd",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:09.434Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: BDysKREg973BAgZAE4N1yKuMe4k4q9Zu2SUTgoVrYNuZ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:09.990Z",
+  "level": "DEBUG",
+  "message": "Found 2 MKIN NFTs for BDysKREg973BAgZAE4N1yKuMe4k4q9Zu2SUTgoVrYNuZ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:10.429Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: BDysKREg973BAgZAE4N1yKuMe4k4q9Zu2SUTgoVrYNuZ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:10.744Z",
+  "level": "DEBUG",
+  "message": "Found 2 MKIN NFTs for BDysKREg973BAgZAE4N1yKuMe4k4q9Zu2SUTgoVrYNuZ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:11.194Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: BHZjRGk3VHJL2EN27LRAB4MBb4HAvqrCCv2wtfrBcPJv",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:11.578Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for BHZjRGk3VHJL2EN27LRAB4MBb4HAvqrCCv2wtfrBcPJv",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:12.017Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: BJb5cwCGaVfqd6oWoowsL2MjM2LTpvFRdENBXMrkMQqp",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:12.355Z",
+  "level": "DEBUG",
+  "message": "Found 24 MKIN NFTs for BJb5cwCGaVfqd6oWoowsL2MjM2LTpvFRdENBXMrkMQqp",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:12.809Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: BJipmk6grEmZaqPvdSnTScNvZ7otZxKLMEcGEpL9N6ui",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:22.673Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for BJipmk6grEmZaqPvdSnTScNvZ7otZxKLMEcGEpL9N6ui",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:23.110Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: BRofRUhr1k9fqcpjncBR3xHPxWNW2tHYfYHFPxtqSbhv",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:23.491Z",
+  "level": "DEBUG",
+  "message": "Found 21 MKIN NFTs for BRofRUhr1k9fqcpjncBR3xHPxWNW2tHYfYHFPxtqSbhv",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:23.950Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: BRofRUhr1k9fqcpjncBR3xHPxWNW2tHYfYHFPxtqSbhv",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:24.273Z",
+  "level": "DEBUG",
+  "message": "Found 21 MKIN NFTs for BRofRUhr1k9fqcpjncBR3xHPxWNW2tHYfYHFPxtqSbhv",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:24.708Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: BRofRUhr1k9fqcpjncBR3xHPxWNW2tHYfYHFPxtqSbhv",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:25.050Z",
+  "level": "DEBUG",
+  "message": "Found 21 MKIN NFTs for BRofRUhr1k9fqcpjncBR3xHPxWNW2tHYfYHFPxtqSbhv",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:25.489Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: BS1FDHLuo7hpTGEjJYqkJfvAfxP8fJPbBcLTTymCvP4y",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:25.666Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for BS1FDHLuo7hpTGEjJYqkJfvAfxP8fJPbBcLTTymCvP4y",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:26.125Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: Bh8jyqATLhNfsXkk9GtxrEkZP5qMUmbfMS97jEmScHhb",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:26.439Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for Bh8jyqATLhNfsXkk9GtxrEkZP5qMUmbfMS97jEmScHhb",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:26.909Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: BhYVwoVrsrpDLy3dVdwSJajiXpDdtQnA6AXGEtD7R8SB",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:27.224Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for BhYVwoVrsrpDLy3dVdwSJajiXpDdtQnA6AXGEtD7R8SB",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:27.674Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: BiL8hyf34dEFvGebpn5KZpd4CLeghNxKSH4WWZUA1PMJ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:27.846Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for BiL8hyf34dEFvGebpn5KZpd4CLeghNxKSH4WWZUA1PMJ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:28.296Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: BrmUpCPZqYW8DCeG79datb3dV3FTWWcGQ26oYYMCyaV9",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:29.284Z",
+  "level": "DEBUG",
+  "message": "Found 10 MKIN NFTs for BrmUpCPZqYW8DCeG79datb3dV3FTWWcGQ26oYYMCyaV9",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:29.721Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: BtttsoAzxHy3x8467ogHSviu3oY2FUzrbwcXTF8x6FZT",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:39.126Z",
+  "level": "DEBUG",
+  "message": "Found 25 MKIN NFTs for BtttsoAzxHy3x8467ogHSviu3oY2FUzrbwcXTF8x6FZT",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:39.569Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: BzFFSkBVtfhr8Nq8ELJnDqwRxnLdF46vN9CJXBoRLLXQ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:39.910Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for BzFFSkBVtfhr8Nq8ELJnDqwRxnLdF46vN9CJXBoRLLXQ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:40.360Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: BzFFSkBVtfhr8Nq8ELJnDqwRxnLdF46vN9CJXBoRLLXQ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:40.656Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for BzFFSkBVtfhr8Nq8ELJnDqwRxnLdF46vN9CJXBoRLLXQ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:41.099Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: BzNyGYB7Mc6pawPLPWSE74sork5UHDYPE9MAnsbDvWXZ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:41.254Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for BzNyGYB7Mc6pawPLPWSE74sork5UHDYPE9MAnsbDvWXZ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:41.699Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: C9FtYnGW6MHSBqWLfoQnQtmsS9Mb2mAwbdmEKbvRfTuZ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:42.088Z",
+  "level": "DEBUG",
+  "message": "Found 97 MKIN NFTs for C9FtYnGW6MHSBqWLfoQnQtmsS9Mb2mAwbdmEKbvRfTuZ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:42.529Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: CDpnt4GUybij6h6CG13gnfEnZeC6L7XV6ub6QzZUM72X",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:44.096Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for CDpnt4GUybij6h6CG13gnfEnZeC6L7XV6ub6QzZUM72X",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:27:44.534Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: CJJUecXUidgZyoKwdKp5qBhpN8x1r6Fo8ninfQL5JvWH",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:05.580Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for CJJUecXUidgZyoKwdKp5qBhpN8x1r6Fo8ninfQL5JvWH",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:06.030Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: CNEwxBU99pCPvjqMpsF18cT5bUinyyWEkyFDEHQEHVGj",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:06.370Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for CNEwxBU99pCPvjqMpsF18cT5bUinyyWEkyFDEHQEHVGj",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:06.819Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: CNhCimF97ue5vQsUAYXFWuQ8b3wGvuy2mwi3x74RMoiL",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:07.156Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for CNhCimF97ue5vQsUAYXFWuQ8b3wGvuy2mwi3x74RMoiL",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:07.608Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: CRZpok47HL3wPwTWLBFpnWeKTgecDuLChxVE1hzkKTxo",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:07.910Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for CRZpok47HL3wPwTWLBFpnWeKTgecDuLChxVE1hzkKTxo",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:08.338Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: CVUTUouSDXNc21YEXkWt417AU8Xn3jnMrfPvKQseyziH",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:08.664Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for CVUTUouSDXNc21YEXkWt417AU8Xn3jnMrfPvKQseyziH",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:09.133Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: CVqMwghHGQAGax6V1Ngt6YRmFo3GvXKGaf9SZUz4kUJc",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:09.487Z",
+  "level": "DEBUG",
+  "message": "Found 4 MKIN NFTs for CVqMwghHGQAGax6V1Ngt6YRmFo3GvXKGaf9SZUz4kUJc",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:09.939Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: CXorEEAT87xWBYptcJyKA7U6NzFLp2WSbrXQTTEZ3r5i",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:10.109Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for CXorEEAT87xWBYptcJyKA7U6NzFLp2WSbrXQTTEZ3r5i",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:10.820Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: CeQXhxzpJn6y9jEYrgz62h212HsndSS3FWR8fyHcT4wF",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:10.976Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for CeQXhxzpJn6y9jEYrgz62h212HsndSS3FWR8fyHcT4wF",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:11.429Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: ChpgYSKHxY6R7xd5rwVuQEyrs6ZbLpiXheZFDYs8N2M8",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:11.596Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for ChpgYSKHxY6R7xd5rwVuQEyrs6ZbLpiXheZFDYs8N2M8",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:12.039Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: CjELD2CbFXaCdPFjdgo7vbXZhfCScyc6GTa2dyyuf83A",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:12.208Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for CjELD2CbFXaCdPFjdgo7vbXZhfCScyc6GTa2dyyuf83A",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:12.689Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: CjXzCbrv5izuoYurtj6fneMkf7DujX297LhhrEVANkeY",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:13.091Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for CjXzCbrv5izuoYurtj6fneMkf7DujX297LhhrEVANkeY",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:13.529Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: CkSBCwB2rBfJnoZyMYNQoaGQ9Jtc4f2ainpEjteWvyF",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:13.855Z",
+  "level": "DEBUG",
+  "message": "Found 4 MKIN NFTs for CkSBCwB2rBfJnoZyMYNQoaGQ9Jtc4f2ainpEjteWvyF",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:14.288Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: CkSBCwB2rBfJnoZyMYNQoaGQ9Jtc4f2ainpEjteWvyF",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:14.626Z",
+  "level": "DEBUG",
+  "message": "Found 4 MKIN NFTs for CkSBCwB2rBfJnoZyMYNQoaGQ9Jtc4f2ainpEjteWvyF",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:15.080Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: Cqpuutdb6cvL1vA7tHVindVzJXQ5QxJb2xTuAHdX1PJb",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:15.445Z",
+  "level": "DEBUG",
+  "message": "Found 56 MKIN NFTs for Cqpuutdb6cvL1vA7tHVindVzJXQ5QxJb2xTuAHdX1PJb",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:15.909Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: CrtS8nRRN4w9maofUzrSPoDv5PEfnTxY9S4f3e8Le5pe",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:20.539Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for CrtS8nRRN4w9maofUzrSPoDv5PEfnTxY9S4f3e8Le5pe",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:20.980Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: Cs7hpLYxEaMde1DnyeJUAY4xcJAm2zTaGj6J88VhuTpH",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:23.666Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for Cs7hpLYxEaMde1DnyeJUAY4xcJAm2zTaGj6J88VhuTpH",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:24.115Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: CwNu3uqk7ExMJ83JeSYG2sEFRASAKjPKiUEUxCrRytAY",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:24.390Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for CwNu3uqk7ExMJ83JeSYG2sEFRASAKjPKiUEUxCrRytAY",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:24.919Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: CxHZPFYwHx1SiS2ar6gM51ceJsfFJwS3VuKeBKPJNyid",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:25.078Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for CxHZPFYwHx1SiS2ar6gM51ceJsfFJwS3VuKeBKPJNyid",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:25.382Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: DDmeaoGZEj4ckgpnoybJBu8ZTFPe8uDsZhSvPWWiDFUd",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:25.849Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for DDmeaoGZEj4ckgpnoybJBu8ZTFPe8uDsZhSvPWWiDFUd",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:26.319Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: DG5mRQpZ4uFQrN8hzX3kxU26uLQEMod81DuwYXZwmuW1",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:26.806Z",
+  "level": "DEBUG",
+  "message": "Found 2 MKIN NFTs for DG5mRQpZ4uFQrN8hzX3kxU26uLQEMod81DuwYXZwmuW1",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:26.807Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user EWT07Y7nZQVr1fnztXs3CvlW1eH2",
+  "data": {
+    "nftCount": 7,
+    "walletAddress": "ALPF8Qy7jrkoHHE4T4HThXj3QBZzh3Gq5P46WyWRWbbV"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.807Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user JpfASa470AStzhkaUhEAR8B7WlT2",
+  "data": {
+    "nftCount": 7,
+    "walletAddress": "ALPF8Qy7jrkoHHE4T4HThXj3QBZzh3Gq5P46WyWRWbbV"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.808Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user RM5yekajeQRBJYLZTGAth7dey822",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "AsRjkNc3xeVhLHWJ1ejpdmPzAUYBo1vxo3mdWR3XznsC"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.808Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user m2r0HXbBv6e3XdA7tQwjrEcCSvk2",
+  "data": {
+    "nftCount": 5,
+    "walletAddress": "AtnRwmxvKK1hJMBdnuWcWfMED6if2B4tUNKB1NmYSH87"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.808Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user nvCBkV2sIgYUKy1ggdqq7Dkh1cK2",
+  "data": {
+    "nftCount": 34,
+    "walletAddress": "B138FAJujdkJwnyYr8nL6ZLh7VUKSPVgoSrxaF6xg4qd"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.809Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user HvrdQ0ksldTKTzUXFeDrDGF8wIt1",
+  "data": {
+    "nftCount": 2,
+    "walletAddress": "BDysKREg973BAgZAE4N1yKuMe4k4q9Zu2SUTgoVrYNuZ"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.809Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user NiJiav5lfUOb5W3x55xxysDNXRV2",
+  "data": {
+    "nftCount": 2,
+    "walletAddress": "BDysKREg973BAgZAE4N1yKuMe4k4q9Zu2SUTgoVrYNuZ"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.809Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user 88sUVD5gYKXH2OphJZE7PBPsBqX2",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "BHZjRGk3VHJL2EN27LRAB4MBb4HAvqrCCv2wtfrBcPJv"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.810Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user cheyQLFNn9QR8ovaVyrRtDTpuW43",
+  "data": {
+    "nftCount": 24,
+    "walletAddress": "BJb5cwCGaVfqd6oWoowsL2MjM2LTpvFRdENBXMrkMQqp"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.810Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user IWuuUEMd5HMk6wHzEXs1xLZrM032",
+  "data": {
+    "nftCount": 21,
+    "walletAddress": "BRofRUhr1k9fqcpjncBR3xHPxWNW2tHYfYHFPxtqSbhv"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.810Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user OKngISNqZ0RrrmSjGBZMyBZXcM82",
+  "data": {
+    "nftCount": 21,
+    "walletAddress": "BRofRUhr1k9fqcpjncBR3xHPxWNW2tHYfYHFPxtqSbhv"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.811Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user b173af07-9257-4bce-8735-d4a79dfcb6df",
+  "data": {
+    "nftCount": 21,
+    "walletAddress": "BRofRUhr1k9fqcpjncBR3xHPxWNW2tHYfYHFPxtqSbhv"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.811Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user 3AUNgjkK95Y6zdsABrovaoTuCLr1",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "BhYVwoVrsrpDLy3dVdwSJajiXpDdtQnA6AXGEtD7R8SB"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.811Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user uD4xJ8gpHjVxyY2KHD0B9ItZGm62",
+  "data": {
+    "nftCount": 10,
+    "walletAddress": "BrmUpCPZqYW8DCeG79datb3dV3FTWWcGQ26oYYMCyaV9"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.811Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user uZtzqeC6BiPLpKknNFY4cI3vbHv2",
+  "data": {
+    "nftCount": 25,
+    "walletAddress": "BtttsoAzxHy3x8467ogHSviu3oY2FUzrbwcXTF8x6FZT"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.812Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user OQv4sgUqH5abCb92EzdDleY3LvG2",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "BzFFSkBVtfhr8Nq8ELJnDqwRxnLdF46vN9CJXBoRLLXQ"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.812Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user i1N0L0gGeCYOSOAsaGTgNKXHt5r1",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "BzFFSkBVtfhr8Nq8ELJnDqwRxnLdF46vN9CJXBoRLLXQ"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.812Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user jDbySdiDJQQWzZIFEBgn3UpWWUc2",
+  "data": {
+    "nftCount": 97,
+    "walletAddress": "C9FtYnGW6MHSBqWLfoQnQtmsS9Mb2mAwbdmEKbvRfTuZ"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.813Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user iYyjKNaJxOVGtaxTb2toFnxSkVh1",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "CNhCimF97ue5vQsUAYXFWuQ8b3wGvuy2mwi3x74RMoiL"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.813Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user 57dGb4yHqgeiWOTcD22vj1rJair1",
+  "data": {
+    "nftCount": 4,
+    "walletAddress": "CVqMwghHGQAGax6V1Ngt6YRmFo3GvXKGaf9SZUz4kUJc"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.814Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user akia2ICMpBaHxWqompqcZ5Pn2o63",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "CjXzCbrv5izuoYurtj6fneMkf7DujX297LhhrEVANkeY"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.814Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user NOv8OowpL6MJLu0ONSLOy4fxQ3L2",
+  "data": {
+    "nftCount": 4,
+    "walletAddress": "CkSBCwB2rBfJnoZyMYNQoaGQ9Jtc4f2ainpEjteWvyF"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.815Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user UilymgwTAbMwfdqnIxReUatXWBq2",
+  "data": {
+    "nftCount": 4,
+    "walletAddress": "CkSBCwB2rBfJnoZyMYNQoaGQ9Jtc4f2ainpEjteWvyF"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.815Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user E0bf9h1l2wNFKtqxnvt22UvhWM62",
+  "data": {
+    "nftCount": 56,
+    "walletAddress": "Cqpuutdb6cvL1vA7tHVindVzJXQ5QxJb2xTuAHdX1PJb"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:26.815Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user kLLsbdXNzMPlwo7DtFH9z3xrYVu2",
+  "data": {
+    "nftCount": 2,
+    "walletAddress": "DG5mRQpZ4uFQrN8hzX3kxU26uLQEMod81DuwYXZwmuW1"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:27.392Z",
+  "level": "SUCCESS",
+  "message": "Batch committed successfully: 25 distributions",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:29.402Z",
+  "level": "INFO",
+  "message": "Processing batch 4/5",
+  "data": {
+    "batchSize": 50,
+    "progress": "72%"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:28:29.865Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: DMqozHphj6p4FoKnvE2RsXHD3f6KWGqUfedKPGNHfYMi",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:30.035Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for DMqozHphj6p4FoKnvE2RsXHD3f6KWGqUfedKPGNHfYMi",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:30.560Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: DV6bc1P91quAiZWDzEwxsFcppCru1APpfUYnfei4fsxk",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:30.920Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for DV6bc1P91quAiZWDzEwxsFcppCru1APpfUYnfei4fsxk",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:31.378Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: DdrzhUo4YGJzLySBaSTwPSSvbpkMX5vmgyGeDDB5mrYt",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:31.709Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for DdrzhUo4YGJzLySBaSTwPSSvbpkMX5vmgyGeDDB5mrYt",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:32.159Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: DmtAaegRSXvcbJDvNDmBfCjZ8DpA893scjnWqFB4NCPh",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:32.318Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for DmtAaegRSXvcbJDvNDmBfCjZ8DpA893scjnWqFB4NCPh",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:32.739Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: DoR5AfmNQZPxCo3Ypd4sgeiU1bKJeNTyyRpcmM1A1Scf",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:33.069Z",
+  "level": "DEBUG",
+  "message": "Found 27 MKIN NFTs for DoR5AfmNQZPxCo3Ypd4sgeiU1bKJeNTyyRpcmM1A1Scf",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:33.627Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: DqaXvrN6vsLBbQ3eQ7kfxefrYe8Efr1tLS6HkDsL2hRD",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:33.951Z",
+  "level": "DEBUG",
+  "message": "Found 10 MKIN NFTs for DqaXvrN6vsLBbQ3eQ7kfxefrYe8Efr1tLS6HkDsL2hRD",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:34.400Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: DvzrYVuv87RcxYV7f6CXyZKi6TWcLFiDzKB5gRiUzXwp",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:34.567Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for DvzrYVuv87RcxYV7f6CXyZKi6TWcLFiDzKB5gRiUzXwp",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:34.999Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: DwbNG4G9x2vhZuSLZFgmnBUTozpwmBChWZPnw8vhvnjY",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:36.203Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for DwbNG4G9x2vhZuSLZFgmnBUTozpwmBChWZPnw8vhvnjY",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:36.700Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: E24P6Kct1Ciqmn1xgx7jMGGgCaMZLszpkLtdGhWnTVLH",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:41.169Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for E24P6Kct1Ciqmn1xgx7jMGGgCaMZLszpkLtdGhWnTVLH",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:41.620Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: E6159d9mYyPyimzijbzFrSHdKBH82gCeBV2fLAtwr6e3",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:42.421Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for E6159d9mYyPyimzijbzFrSHdKBH82gCeBV2fLAtwr6e3",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:42.858Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: E9ACQFUpEWeufF3hdmYpKShVVc3ZVVLv4TBjaPfwmNpX",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:43.189Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for E9ACQFUpEWeufF3hdmYpKShVVc3ZVVLv4TBjaPfwmNpX",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:43.627Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: EBsTCZAymPDiNg7u5PfbFBaif2FDRxT5BjrR4eHapYSc",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:43.995Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for EBsTCZAymPDiNg7u5PfbFBaif2FDRxT5BjrR4eHapYSc",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:44.439Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: ECCz3yBq921Y8xrXqyz2vow4kSjcVncoLb7tmJYVK5J",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:44.790Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for ECCz3yBq921Y8xrXqyz2vow4kSjcVncoLb7tmJYVK5J",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:45.258Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: EHkFFV6daEMqKpnKrzz4a4t5Uvh3HSRoUYRkvGfpagsq",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:45.569Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for EHkFFV6daEMqKpnKrzz4a4t5Uvh3HSRoUYRkvGfpagsq",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:46.008Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: ELoTkgAxSgie3zbfdS8Bv7CRkwc4qN59wmhLxSsB6LKQ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:46.316Z",
+  "level": "DEBUG",
+  "message": "Found 5 MKIN NFTs for ELoTkgAxSgie3zbfdS8Bv7CRkwc4qN59wmhLxSsB6LKQ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:46.758Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: EVk11aGL9DTKGZGK8p5A8JjNLAkTKuxNfoK6MX2n8QPz",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:46.926Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for EVk11aGL9DTKGZGK8p5A8JjNLAkTKuxNfoK6MX2n8QPz",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:47.359Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: Eh52Ae8ASd1xJmjwiqs3yCgqz9vGcReC4ntVJPpBohHw",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:47.721Z",
+  "level": "DEBUG",
+  "message": "Found 3 MKIN NFTs for Eh52Ae8ASd1xJmjwiqs3yCgqz9vGcReC4ntVJPpBohHw",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:48.169Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: Eh52Ae8ASd1xJmjwiqs3yCgqz9vGcReC4ntVJPpBohHw",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:48.471Z",
+  "level": "DEBUG",
+  "message": "Found 3 MKIN NFTs for Eh52Ae8ASd1xJmjwiqs3yCgqz9vGcReC4ntVJPpBohHw",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:48.919Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: Ex1xA6mms9e9PC7VARGUhfbxMMhP4Wq3geXvPkdCWi3k",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:49.305Z",
+  "level": "DEBUG",
+  "message": "Found 28 MKIN NFTs for Ex1xA6mms9e9PC7VARGUhfbxMMhP4Wq3geXvPkdCWi3k",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:49.744Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: F1p6dNLSSTHi4QkUkRVXZw8QurZJKUDcvVBjfF683nU",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:50.125Z",
+  "level": "DEBUG",
+  "message": "Found 16 MKIN NFTs for F1p6dNLSSTHi4QkUkRVXZw8QurZJKUDcvVBjfF683nU",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:50.564Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: FFjJdEw939BVPo5RBTA5S5jWwBbUU9gL97AvHBzPbmbE",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:50.879Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for FFjJdEw939BVPo5RBTA5S5jWwBbUU9gL97AvHBzPbmbE",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:51.318Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: FRuf8dEPdZPqb8HfPyHfpetgfESKJQpUGvnvzy3MT6EG",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:51.525Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for FRuf8dEPdZPqb8HfPyHfpetgfESKJQpUGvnvzy3MT6EG",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:51.988Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: FatUnQ2noboZYHmEyJjKDgcvSvGFeceavi6pWeWxnZvM",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:52.154Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for FatUnQ2noboZYHmEyJjKDgcvSvGFeceavi6pWeWxnZvM",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:52.578Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: FbMWXdmU2QNHJ8yCcQNZpRyjZHYwMLqDgLKJ42CPs5Mf",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:53.104Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for FbMWXdmU2QNHJ8yCcQNZpRyjZHYwMLqDgLKJ42CPs5Mf",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:53.534Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: Fh9F1jyD974aegpAtSrHHJMmenSeQW1UqQaTTixiMx9f",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:54.178Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for Fh9F1jyD974aegpAtSrHHJMmenSeQW1UqQaTTixiMx9f",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:54.618Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: FmXKzCocYEEq1UCHk9mByVGMPUJ2HpVjefuAKgiDJRmQ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:55.026Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for FmXKzCocYEEq1UCHk9mByVGMPUJ2HpVjefuAKgiDJRmQ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:55.472Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: FvjV8c7KqwppavBFi1NbSMF7DNz92HNFUoVViyMJJuvF",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:55.760Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for FvjV8c7KqwppavBFi1NbSMF7DNz92HNFUoVViyMJJuvF",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:56.204Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: FxCoU75MrRWCPwPQ2xyuEdetCQ19U6uxDtjYUt5NmALN",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:56.540Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for FxCoU75MrRWCPwPQ2xyuEdetCQ19U6uxDtjYUt5NmALN",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:28:56.979Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: Fy9bTHoCepQgaYBFCKpzHduCxSDAwkZHjcXz3t2fK1PP",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:00.502Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for Fy9bTHoCepQgaYBFCKpzHduCxSDAwkZHjcXz3t2fK1PP",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:00.960Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: G1akq2rgcWcCDEn2C5hq48Fh2Hk8QvT2w5sFsq57QVeh",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:02.094Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for G1akq2rgcWcCDEn2C5hq48Fh2Hk8QvT2w5sFsq57QVeh",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:02.539Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: G9u563zJHcqAekQP8sKNJUww3rU7eqKaStEJDMrG24xC",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:02.859Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for G9u563zJHcqAekQP8sKNJUww3rU7eqKaStEJDMrG24xC",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:03.288Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: GCFaPdPG6LbdwAEXUNvzja58wQekeexWexoQuPowQV4E",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:03.451Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for GCFaPdPG6LbdwAEXUNvzja58wQekeexWexoQuPowQV4E",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:03.899Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: GNkWUN7sZQULJzQgWaNQn87Up4pHzUWSQSHWrZVCSkRw",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:04.506Z",
+  "level": "DEBUG",
+  "message": "Found 2 MKIN NFTs for GNkWUN7sZQULJzQgWaNQn87Up4pHzUWSQSHWrZVCSkRw",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:04.953Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: GWfiqLijY5SXRWGJoGSNCFvUuUZPW9Hom85FYq6YspvR",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:05.610Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for GWfiqLijY5SXRWGJoGSNCFvUuUZPW9Hom85FYq6YspvR",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:06.059Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: GioqHqhk7UcvNPZQbFuJBD8UjrSsQSL3F5RGdBtpogim",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:11.417Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for GioqHqhk7UcvNPZQbFuJBD8UjrSsQSL3F5RGdBtpogim",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:11.863Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: GkqCkoSPgnE8pGh9g67rRBfsXWULnmEZt6eZSbBi5hHA",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:12.190Z",
+  "level": "DEBUG",
+  "message": "Found 25 MKIN NFTs for GkqCkoSPgnE8pGh9g67rRBfsXWULnmEZt6eZSbBi5hHA",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:12.646Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: GokuBgsGhngqVWbzdsXQQJkzAsuZkxYEu4vaYaSNEYyx",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:12.966Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for GokuBgsGhngqVWbzdsXQQJkzAsuZkxYEu4vaYaSNEYyx",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:13.610Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: GoxgXPuZwyAs8ZM1xioyXkAq35aZReks8mnM7hLtwLsr",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:13.784Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for GoxgXPuZwyAs8ZM1xioyXkAq35aZReks8mnM7hLtwLsr",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:14.229Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: GqcsHDEJPRU6kc1uFyJDUf51MXwppNfSgNnYLQMej7PU",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:14.586Z",
+  "level": "DEBUG",
+  "message": "Found 20 MKIN NFTs for GqcsHDEJPRU6kc1uFyJDUf51MXwppNfSgNnYLQMej7PU",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:15.039Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: Gsn9WsRjLBboAar9cngwBHJRAoVyeydr3quSAezCk7pZ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:15.413Z",
+  "level": "DEBUG",
+  "message": "Found 43 MKIN NFTs for Gsn9WsRjLBboAar9cngwBHJRAoVyeydr3quSAezCk7pZ",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:15.856Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: H4Gx4dTSHmvK7bJRgNo18ZP9eTVFNJn1f2F16z2bNJzw",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:16.196Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for H4Gx4dTSHmvK7bJRgNo18ZP9eTVFNJn1f2F16z2bNJzw",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:16.738Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: H6jRGZyLdNfKZtp9S4SsBu79KEvn9FSqb3tWig9d1der",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:17.328Z",
+  "level": "DEBUG",
+  "message": "Found 113 MKIN NFTs for H6jRGZyLdNfKZtp9S4SsBu79KEvn9FSqb3tWig9d1der",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:17.789Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: H6jRGZyLdNfKZtp9S4SsBu79KEvn9FSqb3tWig9d1der",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:18.276Z",
+  "level": "DEBUG",
+  "message": "Found 113 MKIN NFTs for H6jRGZyLdNfKZtp9S4SsBu79KEvn9FSqb3tWig9d1der",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:18.718Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: HF9MqpPVs5ycXwxPZEQhDhzaqamCHGhgJPkAxtvm3DSc",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:19.038Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for HF9MqpPVs5ycXwxPZEQhDhzaqamCHGhgJPkAxtvm3DSc",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:19.464Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: HKAQGLE5sjf7KpnFNjffp1UUynhSdq96E26fozBMNYHa",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:26.072Z",
+  "level": "DEBUG",
+  "message": "Found 3 MKIN NFTs for HKAQGLE5sjf7KpnFNjffp1UUynhSdq96E26fozBMNYHa",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:26.520Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: HNeDmvmLg5kW1QwqUfWQNTaTZTDuDWZ2iSgcM7PBpxFX",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:27.800Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for HNeDmvmLg5kW1QwqUfWQNTaTZTDuDWZ2iSgcM7PBpxFX",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:28.240Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: HUHtmj2wwJSfSy5XzRwybLpC97k7vtsmkV5zuuXEf83v",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:28.575Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for HUHtmj2wwJSfSy5XzRwybLpC97k7vtsmkV5zuuXEf83v",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:29.014Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: He2A8AvGN8zsoK1ARcuxVf3PArCgxEhChd9zkA3GphEX",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:29.769Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for He2A8AvGN8zsoK1ARcuxVf3PArCgxEhChd9zkA3GphEX",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:30.219Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: HfHiW5Yczthd8vvNpE3WiZhq37jVBpaMQ4J3WcM6YvbM",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:30.381Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for HfHiW5Yczthd8vvNpE3WiZhq37jVBpaMQ4J3WcM6YvbM",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:30.839Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: HftzJun911SWbYTyiL6Two3jWXFU3RMbq6rawsXhaeBF",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:33.067Z",
+  "level": "DEBUG",
+  "message": "Found 2 MKIN NFTs for HftzJun911SWbYTyiL6Two3jWXFU3RMbq6rawsXhaeBF",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:33.067Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user jDtNcZHNFBdLI0sYmCtopBgqbsJ2",
+  "data": {
+    "nftCount": 27,
+    "walletAddress": "DoR5AfmNQZPxCo3Ypd4sgeiU1bKJeNTyyRpcmM1A1Scf"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:33.068Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user LMSOK0KbD9XAkzrLtWa6f531mPm1",
+  "data": {
+    "nftCount": 10,
+    "walletAddress": "DqaXvrN6vsLBbQ3eQ7kfxefrYe8Efr1tLS6HkDsL2hRD"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:33.068Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user 1skTlbNy4HaKX2caOIsC5PVHfWZ2",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "EBsTCZAymPDiNg7u5PfbFBaif2FDRxT5BjrR4eHapYSc"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:33.068Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user N6V8WnQ0uQRpm9ruBG6DYRIHt6H2",
+  "data": {
+    "nftCount": 5,
+    "walletAddress": "ELoTkgAxSgie3zbfdS8Bv7CRkwc4qN59wmhLxSsB6LKQ"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:33.068Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user 15313037-bee5-4966-9503-196823144011",
+  "data": {
+    "nftCount": 3,
+    "walletAddress": "Eh52Ae8ASd1xJmjwiqs3yCgqz9vGcReC4ntVJPpBohHw"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:33.069Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user DiNTSZuqwmhs25YhHepo0BBpzyu1",
+  "data": {
+    "nftCount": 3,
+    "walletAddress": "Eh52Ae8ASd1xJmjwiqs3yCgqz9vGcReC4ntVJPpBohHw"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:33.069Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user ex1xa6mms9e9pc7varguhfbxmmhp4wq3gexvpkdcwi3k",
+  "data": {
+    "nftCount": 28,
+    "walletAddress": "Ex1xA6mms9e9PC7VARGUhfbxMMhP4Wq3geXvPkdCWi3k"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:33.070Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user BeVUl1Qop0Q81BqAvJIWLo0E7Qe2",
+  "data": {
+    "nftCount": 16,
+    "walletAddress": "F1p6dNLSSTHi4QkUkRVXZw8QurZJKUDcvVBjfF683nU"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:33.070Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user ROr9jCvncnOxlqazty4EZ6imSlO2",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "FFjJdEw939BVPo5RBTA5S5jWwBbUU9gL97AvHBzPbmbE"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:33.070Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user SXNHQiQP3ObUUTGt3DSGqtIcCfg2",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "FxCoU75MrRWCPwPQ2xyuEdetCQ19U6uxDtjYUt5NmALN"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:33.071Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user lZEcSJlsiAZS4zScY1ZMQKFahC43",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "G1akq2rgcWcCDEn2C5hq48Fh2Hk8QvT2w5sFsq57QVeh"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:33.071Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user j7sUBF03sSe2HyqKo1n79n2pudj1",
+  "data": {
+    "nftCount": 2,
+    "walletAddress": "GNkWUN7sZQULJzQgWaNQn87Up4pHzUWSQSHWrZVCSkRw"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:33.071Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user BHDw0vriyAM0h5m1eGQX8TLmVTb2",
+  "data": {
+    "nftCount": 25,
+    "walletAddress": "GkqCkoSPgnE8pGh9g67rRBfsXWULnmEZt6eZSbBi5hHA"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:33.071Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user FyEJcdhJ93Q1ZDh7y7vgwNUNuWa2",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "GokuBgsGhngqVWbzdsXQQJkzAsuZkxYEu4vaYaSNEYyx"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:33.072Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user zpgb5cLvyVWjGoxlAzKyj5NMh2h1",
+  "data": {
+    "nftCount": 20,
+    "walletAddress": "GqcsHDEJPRU6kc1uFyJDUf51MXwppNfSgNnYLQMej7PU"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:33.072Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user a1RUT1QLeke5LjwLKA4oEQYkr223",
+  "data": {
+    "nftCount": 43,
+    "walletAddress": "Gsn9WsRjLBboAar9cngwBHJRAoVyeydr3quSAezCk7pZ"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:33.072Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user 7qdPA3cZKoNTUeONsX3E5zwFbo63",
+  "data": {
+    "nftCount": 113,
+    "walletAddress": "H6jRGZyLdNfKZtp9S4SsBu79KEvn9FSqb3tWig9d1der"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:33.073Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user VUnHw6VdVgavivtYAeXJpxkfgms2",
+  "data": {
+    "nftCount": 113,
+    "walletAddress": "H6jRGZyLdNfKZtp9S4SsBu79KEvn9FSqb3tWig9d1der"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:33.073Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user gDfM4jxhLoUMiu6f0D7QpCMbqDj2",
+  "data": {
+    "nftCount": 3,
+    "walletAddress": "HKAQGLE5sjf7KpnFNjffp1UUynhSdq96E26fozBMNYHa"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:33.074Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user v9bMsQqKRggwqRjqp7JJonoMHEf1",
+  "data": {
+    "nftCount": 2,
+    "walletAddress": "HftzJun911SWbYTyiL6Two3jWXFU3RMbq6rawsXhaeBF"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:33.594Z",
+  "level": "SUCCESS",
+  "message": "Batch committed successfully: 20 distributions",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:35.607Z",
+  "level": "INFO",
+  "message": "Processing batch 5/5",
+  "data": {
+    "batchSize": 9,
+    "progress": "96%"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:36.048Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: Hk8ZYAkkGGeRvHXEn9rnUPU2L75ix7gkBuWF6Vqr34Ds",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:40.226Z",
+  "level": "DEBUG",
+  "message": "Found 7 MKIN NFTs for Hk8ZYAkkGGeRvHXEn9rnUPU2L75ix7gkBuWF6Vqr34Ds",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:40.670Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: Hk8ZYAkkGGeRvHXEn9rnUPU2L75ix7gkBuWF6Vqr34Ds",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:42.891Z",
+  "level": "DEBUG",
+  "message": "Found 7 MKIN NFTs for Hk8ZYAkkGGeRvHXEn9rnUPU2L75ix7gkBuWF6Vqr34Ds",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:43.345Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: JCbDT8sK9WgLjqAZ5vrYSKVEKqkhmcim2CVdBif4bYsk",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:43.710Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for JCbDT8sK9WgLjqAZ5vrYSKVEKqkhmcim2CVdBif4bYsk",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:44.154Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: THXmFro9NDzGEuc8nFW2yUh7qCL2akMFEBMmtHPJ7s9",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:44.503Z",
+  "level": "DEBUG",
+  "message": "Found 5 MKIN NFTs for THXmFro9NDzGEuc8nFW2yUh7qCL2akMFEBMmtHPJ7s9",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:44.944Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: U1XZen9SuchxygqKiyYoukoeHq8KuQKL8PNrq3auSeY",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:45.268Z",
+  "level": "DEBUG",
+  "message": "Found 0 MKIN NFTs for U1XZen9SuchxygqKiyYoukoeHq8KuQKL8PNrq3auSeY",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:45.710Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: bopM2ojpoQXeBxr9MccTKpXXTFaMg6Um9LQe2ozDPVi",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:46.104Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for bopM2ojpoQXeBxr9MccTKpXXTFaMg6Um9LQe2ozDPVi",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:46.549Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: bopM2ojpoQXeBxr9MccTKpXXTFaMg6Um9LQe2ozDPVi",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:46.902Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for bopM2ojpoQXeBxr9MccTKpXXTFaMg6Um9LQe2ozDPVi",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:47.340Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: bopM2ojpoQXeBxr9MccTKpXXTFaMg6Um9LQe2ozDPVi",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:47.666Z",
+  "level": "DEBUG",
+  "message": "Found 1 MKIN NFTs for bopM2ojpoQXeBxr9MccTKpXXTFaMg6Um9LQe2ozDPVi",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:48.128Z",
+  "level": "DEBUG",
+  "message": "Verifying NFT ownership for wallet: tnEZZ4NKRSs7sd5txQpJFQYf5p6uDoyJYLx8eFKztSb",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:48.511Z",
+  "level": "DEBUG",
+  "message": "Found 7 MKIN NFTs for tnEZZ4NKRSs7sd5txQpJFQYf5p6uDoyJYLx8eFKztSb",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:48.512Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user 5YUkBWE8K0SBVYdIIgvrn8KmHOO2",
+  "data": {
+    "nftCount": 7,
+    "walletAddress": "Hk8ZYAkkGGeRvHXEn9rnUPU2L75ix7gkBuWF6Vqr34Ds"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:48.512Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user J4RhQ1nzhRcxeoRnk3SN9qyiN5r2",
+  "data": {
+    "nftCount": 7,
+    "walletAddress": "Hk8ZYAkkGGeRvHXEn9rnUPU2L75ix7gkBuWF6Vqr34Ds"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:48.513Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user ZAa1L3sxHpQ5mCvbf5C3RBxvTvq2",
+  "data": {
+    "nftCount": 5,
+    "walletAddress": "THXmFro9NDzGEuc8nFW2yUh7qCL2akMFEBMmtHPJ7s9"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:48.513Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user 8ymowg0tmqXWqCkFoFNI6g9S6x82",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "bopM2ojpoQXeBxr9MccTKpXXTFaMg6Um9LQe2ozDPVi"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:48.513Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user d7sVJOTSu6N03J5iUUWKyKwpAU62",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "bopM2ojpoQXeBxr9MccTKpXXTFaMg6Um9LQe2ozDPVi"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:48.513Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user nELfVgI8h7YCAbjBalzpIFqxj6Z2",
+  "data": {
+    "nftCount": 1,
+    "walletAddress": "bopM2ojpoQXeBxr9MccTKpXXTFaMg6Um9LQe2ozDPVi"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:48.513Z",
+  "level": "SUCCESS",
+  "message": "Distributed 35000 MKIN to user mAbVzYznMaQyxdUKebGpmr9sDrD2",
+  "data": {
+    "nftCount": 7,
+    "walletAddress": "tnEZZ4NKRSs7sd5txQpJFQYf5p6uDoyJYLx8eFKztSb"
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:49.004Z",
+  "level": "SUCCESS",
+  "message": "Batch committed successfully: 7 distributions",
+  "data": null
+}
+{
+  "timestamp": "2026-01-05T06:29:49.005Z",
+  "level": "WARNING",
+  "message": "Skipped 4 users with invalid wallet addresses",
+  "data": {
+    "sampleUsers": [
+      {
+        "userId": "7e214bde-1d08-4462-9d5c-36f7f805b242",
+        "walletAddress": "0x6BE04c08dEA62051d9Ba1876A91469f77e05EE3d",
+        "totalNFTs": 0,
+        "totalRealmkin": 0
+      },
+      {
+        "userId": "E3NRq2pMvuerDRdU1LATriTAPfR2",
+        "walletAddress": "0x6BE04c08dEA62051d9Ba1876A91469f77e05EE3d",
+        "totalNFTs": 5,
+        "totalRealmkin": 8000
+      },
+      {
+        "userId": "UpdeCeTCKIexpurrhjp2fMlzj6z1",
+        "walletAddress": "0xc708cEE52f463d50e4dCf5867a6a5526D04D2191",
+        "totalNFTs": 0,
+        "totalRealmkin": 0
+      },
+      {
+        "userId": "Ao2S7fRtUpPsvR54pCKaDQqB9aR2",
+        "walletAddress": "0xdF7469dAFd4b42bd2622dc462b522823aC8d263E",
+        "totalNFTs": 0,
+        "totalRealmkin": 1000
+      }
+    ]
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:49.006Z",
+  "level": "INFO",
+  "message": "📊 DISTRIBUTION SUMMARY",
+  "data": {
+    "totalUsers": 209,
+    "eligibleUsers": 92,
+    "successfulDistributions": 92,
+    "failedDistributions": 0,
+    "skippedUsers": 4,
+    "retriedUsers": 0,
+    "totalTokensDistributed": 3220000,
+    "errorCount": 0
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:49.006Z",
+  "level": "WARNING",
+  "message": "Users with invalid wallet addresses (skipped)",
+  "data": {
+    "count": 4,
+    "sampleWallets": [
+      {
+        "userId": "7e214bde-1d08-4462-9d5c-36f7f805b242",
+        "wallet": "0x6BE04c08dEA62051d9Ba1876A91469f77e05EE3d"
+      },
+      {
+        "userId": "E3NRq2pMvuerDRdU1LATriTAPfR2",
+        "wallet": "0x6BE04c08dEA62051d9Ba1876A91469f77e05EE3d"
+      },
+      {
+        "userId": "UpdeCeTCKIexpurrhjp2fMlzj6z1",
+        "wallet": "0xc708cEE52f463d50e4dCf5867a6a5526D04D2191"
+      },
+      {
+        "userId": "Ao2S7fRtUpPsvR54pCKaDQqB9aR2",
+        "wallet": "0xdF7469dAFd4b42bd2622dc462b522823aC8d263E"
+      }
+    ]
+  }
+}
+{
+  "timestamp": "2026-01-05T06:29:49.007Z",
+  "level": "SUCCESS",
+  "message": "✅ Distribution execution completed",
+  "data": {
+    "totalUsers": 209,
+    "eligibleUsers": 92,
+    "successfulDistributions": 92,
+    "failedDistributions": 0,
+    "skippedUsers": 4,
+    "retriedUsers": 0,
+    "totalTokensDistributed": 3220000,
+    "errors": []
+  }
+}
