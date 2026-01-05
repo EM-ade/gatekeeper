@@ -16,6 +16,7 @@ pnpm-debug.log*
 coverage/
 .cache/
 firebase-admin-*.json
+logs
 serviceAccount*.json
 firebase-service-account.json
 *.pem

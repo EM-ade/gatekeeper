@@ -76,7 +76,7 @@ class PeriodicVerificationService {
         FROM users
         WHERE wallet_address IS NOT NULL
         ORDER BY last_verification_check ASC NULLS FIRST
-        LIMIT 50
+        LIMIT 100
       `;
 
       console.log(`[periodic-verification] Found ${users.length} users to check`);
