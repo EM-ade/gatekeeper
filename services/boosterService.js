@@ -176,6 +176,7 @@ class BoosterService {
 
   /**
    * Update user's staking position with detected boosters
+   * Creates position document if it doesn't exist to store booster data
    */
   async updateUserBoosters(firebaseUid, detectedBoosters) {
     try {
@@ -185,7 +186,19 @@ class BoosterService {
         const posDoc = await t.get(posRef);
         
         if (!posDoc.exists) {
-          console.log(`No staking position found for ${firebaseUid}, skipping booster update`);
+          console.log(`Creating staking position document for ${firebaseUid} with detected boosters`);
+          // Create a minimal staking position document to store booster data
+          await t.set(posRef, {
+            firebase_uid: firebaseUid,
+            principal: 0,
+            start_time: admin.firestore.Timestamp.now(),
+            accumulated_rewards: 0,
+            last_update: admin.firestore.Timestamp.now(),
+            active_boosters: detectedBoosters,
+            booster_multiplier: this.calculateStackedMultiplier(detectedBoosters),
+            boosters_updated_at: admin.firestore.Timestamp.now(),
+            created_at: admin.firestore.Timestamp.now()
+          });
           return;
         }
         
@@ -232,6 +245,7 @@ class BoosterService {
   /**
    * Detect and assign boosters for a user
    * Main entry point for booster detection
+   * Returns detected boosters even if database update fails
    */
   async detectAndAssignBoosters(firebaseUid) {
     try {
@@ -254,8 +268,12 @@ class BoosterService {
       // Scan wallet for eligible NFTs
       const detectedBoosters = await this.scanWalletForBoosters(walletAddress);
       
-      // Update user's staking position
-      await this.updateUserBoosters(firebaseUid, detectedBoosters);
+      // Try to update user's staking position, but return boosters anyway
+      try {
+        await this.updateUserBoosters(firebaseUid, detectedBoosters);
+      } catch (updateError) {
+        console.warn(`Failed to update database with boosters for ${firebaseUid}, but will still return detected boosters:`, updateError);
+      }
       
       // Cache result
       this.cache.set(cacheKey, {
@@ -266,7 +284,8 @@ class BoosterService {
       return detectedBoosters;
     } catch (error) {
       console.error(`Error detecting boosters for ${firebaseUid}:`, error);
-      throw error;
+      // Return empty array instead of throwing to allow staking page to load
+      return [];
     }
   }
 

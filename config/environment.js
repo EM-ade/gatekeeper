@@ -15,7 +15,7 @@ class EnvironmentConfig {
   get apiConfig() {
     return {
       port: process.env.PORT || (this.isDevelopment ? 3001 : 3000),
-      host: process.env.HOST || 'localhost',
+      host: process.env.HOST || (this.isProduction ? '0.0.0.0' : 'localhost'),
       corsOrigins: this.isDevelopment 
         ? ['http://localhost:3000', 'http://localhost:3001'] 
         : ['https://realmkin.com', 'https://www.realmkin.com']
