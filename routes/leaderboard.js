@@ -198,6 +198,103 @@ router.get("/mining/top3", async (req, res) => {
 });
 
 /**
+ * GET /leaderboard/mining/top10
+ * Returns top 10 miners by total rewards or staked amount
+ */
+router.get("/mining/top10", async (req, res) => {
+  try {
+    const type = req.query.type || "rewards"; // "rewards" or "staked"
+    const db = getFirestore();
+    let leaderboard = [];
+
+    if (type === "rewards") {
+      // Top miners by total claimed SOL rewards
+      const positionsRef = db.collection("staking_positions");
+      const snapshot = await positionsRef
+        .where("total_claimed_sol", ">", 0)
+        .orderBy("total_claimed_sol", "desc")
+        .limit(10)
+        .get();
+
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+        const userId = doc.id;
+
+        // Get username from users collection
+        const userDoc = await db.collection("users").doc(userId).get();
+        const userData = userDoc.exists ? userDoc.data() : {};
+        let displayName = userData.username || `User${userId.slice(-4)}`;
+
+        leaderboard.push({
+          userId,
+          username: displayName,
+          rank: leaderboard.length + 1,
+          value: data.total_claimed_sol || 0,
+          valueLabel: `${(data.total_claimed_sol || 0).toFixed(6)} SOL`,
+          metadata: {
+            principalAmount: data.principal_amount || 0,
+            totalAccruedSol: data.total_accrued_sol || 0,
+            activeBoosters: data.active_boosters || [],
+            boosterMultiplier: calculateBoosterMultiplier(data.active_boosters || [])
+          }
+        });
+      }
+    } else if (type === "staked") {
+      // Top miners by current staked amount
+      const positionsRef = db.collection("staking_positions");
+      const snapshot = await positionsRef
+        .where("principal_amount", ">", 0)
+        .orderBy("principal_amount", "desc")
+        .limit(10)
+        .get();
+
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+        const userId = doc.id;
+
+        // Get username from users collection
+        const userDoc = await db.collection("users").doc(userId).get();
+        const userData = userDoc.exists ? userDoc.data() : {};
+        let displayName = userData.username || `User${userId.slice(-4)}`;
+
+        leaderboard.push({
+          userId,
+          username: displayName,
+          rank: leaderboard.length + 1,
+          value: data.principal_amount || 0,
+          valueLabel: `${(data.principal_amount || 0).toLocaleString()} MKIN`,
+          metadata: {
+            totalClaimedSol: data.total_claimed_sol || 0,
+            activeBoosters: data.active_boosters || [],
+            boosterMultiplier: calculateBoosterMultiplier(data.active_boosters || [])
+          }
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      top10: leaderboard,
+      metadata: {
+        type,
+        totalEntries: leaderboard.length,
+        lastUpdated: new Date().toISOString(),
+        criteria: type === "rewards" ? "Total SOL Claimed" : "Current MKIN Staked",
+        displayType: "top10"
+      }
+    });
+
+  } catch (error) {
+    console.error("Error fetching top 10 miners:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch top 10 miners",
+      message: error.message
+    });
+  }
+});
+
+/**
  * Helper: Calculate Booster Multiplier
  * Same logic as in stakingService.js
  */

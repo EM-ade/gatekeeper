@@ -31,11 +31,7 @@ class BoosterService {
           "E21XaE8zaoBZwt2roq7KppxjfFhrcDMpFa7ZMWsFreUh",
           "FMG9Be91LgVd9cb2YX15hPBFJ3iUhH2guB7RbCBFbDbg",
           "J4koZzipRmLjc4QzSbRsn8CdXCZCHUUmTbCSqAtvSJFZ",
-          "khoX7jkUK98uMPv2yF9H9ftLJKTesgpmWbuvKpRvW8h",
-          // Test NFTs for verification
-          "6SABMjQ6DfbnyT5msoVdybVLDQgPfsQhixZufK6xjJun",
-          "5MbExwqPUNL8yNuUb8JK9iCXHGGcLXEDkecgZDfSEJfu",
-          "GK5yLk7TEML3dudTYwyUgHz2z4iCMgfW6MVNfdThjbs1"
+          "khoX7jkUK98uMPv2yF9H9ftLJKTesgpmWbuvKpRvW8h"
         ]
       },
       CUSTOM_1_1: {
@@ -49,11 +45,7 @@ class BoosterService {
           "4G44MShUoWPtyQog7fCH6XTgNHqwEjTtcuGpHg4BxJ1p",
           "AukNaSscLLUKZuWm5eRxxukZ76kNt5iTB7Raeeevrhw",
           "HiW5i4yiumjcZHaHpgjAgHdCRZgpX3j6s9vSeukpxuAF",
-          "PUjmyCPfyEd92D2cm4pppjGB1ddX6wnnttmEzxBHErD",
-          // Test NFTs for verification
-          "6SABMjQ6DfbnyT5msoVdybVLDQgPfsQhixZufK6xjJun",
-          "5MbExwqPUNL8yNuUb8JK9iCXHGGcLXEDkecgZDfSEJfu",
-          "GK5yLk7TEML3dudTYwyUgHz2z4iCMgfW6MVNfdThjbs1"
+          "PUjmyCPfyEd92D2cm4pppjGB1ddX6wnnttmEzxBHErD"
         ]
       },
       SOLANA_MINER: {
@@ -66,11 +58,7 @@ class BoosterService {
           "A5E5hsXsydS4ttrs3Y4ZRPLsBb2ormtDKeFcL5D7Q9vj",
           "EWbzAwkxJRZGoSXSuGq3Gz8eNX1g2muXdspsMimEB8EU",
           "HPaU5hLy3XzNygLTcmM1KWa1ceZvFD3xbAP5eCXoDNuh",
-          "J4EshVN9yfnrqLcfpVXgVpfXd3ySEJkD2aTwfyiDrqDf",
-          // Test NFTs for verification
-          "6SABMjQ6DfbnyT5msoVdybVLDQgPfsQhixZufK6xjJun",
-          "5MbExwqPUNL8yNuUb8JK9iCXHGGcLXEDkecgZDfSEJfu",
-          "GK5yLk7TEML3dudTYwyUgHz2z4iCMgfW6MVNfdThjbs1"
+          "J4EshVN9yfnrqLcfpVXgVpfXd3ySEJkD2aTwfyiDrqDf"
         ]
       }
     };
