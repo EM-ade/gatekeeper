@@ -163,14 +163,9 @@ class StakingService {
     const { goalService } = await import("./goalService.js");
     const isGoalCompleted = await goalService.isGoalCompleted();
 
-    // Detect and assign boosters for this user
-    let detectedBoosters = [];
-    try {
-      detectedBoosters = await this.boosterService.detectAndAssignBoosters(firebaseUid);
-    } catch (error) {
-      console.error(`Error detecting boosters for ${firebaseUid}:`, error);
-      // Continue without boosters if detection fails
-    }
+    // Boosters are now detected separately via /api/boosters/refresh endpoint
+    // to avoid excessive reads on every overview call.
+    // This change reduces Firebase reads by ~100 per overview call.
 
     const pool = await this.getPoolData();
 
@@ -287,10 +282,8 @@ class StakingService {
       console.log(`   Total: ${totalMiningRate.toFixed(12)} SOL/s`);
     }
 
-    // Use detected boosters if position doesn't exist or has no boosters
-    const activeBoosters = userPos?.active_boosters?.length > 0 
-      ? userPos.active_boosters 
-      : detectedBoosters;
+    // Use boosters from stored position data
+    const activeBoosters = userPos?.active_boosters || [];
 
     return {
       pool: {
