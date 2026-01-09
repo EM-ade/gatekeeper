@@ -107,6 +107,8 @@ class StakingService {
    * Helper: Update Pool State with 30% Flat ROI Logic
    * Calculates rewards based on: (totalStaked * 30% * tokenPrice * timeDiff) / SECONDS_IN_YEAR
    * This ensures users earn 30% of their staked token value per year, paid in SOL.
+   * 
+   * @deprecated Use _calculateNewPoolStateSync() inside Firestore transactions
    */
   async _calculateNewPoolState(poolData) {
     const now = admin.firestore.Timestamp.now();
@@ -132,6 +134,57 @@ class StakingService {
 
     console.log(
       `💰 Pool update: ${poolData.total_staked.toLocaleString()} MKIN staked, price: ${tokenPriceSol.toFixed(
+        6
+      )} SOL/MKIN`
+    );
+
+    // Calculate rewards to emit for this time period
+    const rewardsToEmit =
+      (poolData.total_staked * ROI_PERCENT * tokenPriceSol * timeDiffSeconds) /
+      SECONDS_IN_YEAR;
+
+    console.log(
+      `⏱️ Time elapsed: ${timeDiffSeconds}s, rewards to emit: ${rewardsToEmit.toFixed(
+        9
+      )} SOL`
+    );
+
+    return {
+      ...poolData,
+      last_reward_time: now,
+      updated_at: now,
+    };
+  }
+
+  /**
+   * Helper: Update Pool State SYNCHRONOUSLY (for use inside Firestore transactions)
+   * This method does NOT make any async calls, which is critical for Firestore transaction reliability.
+   * Price data must be pre-fetched before calling this method.
+   * 
+   * @param {Object} poolData - Current pool state
+   * @param {number} tokenPriceSol - Pre-fetched MKIN/SOL price
+   * @param {Timestamp} now - Pre-created Firestore timestamp
+   * @returns {Object} Updated pool state
+   */
+  _calculateNewPoolStateSync(poolData, tokenPriceSol, now) {
+    const lastTime = poolData.last_reward_time || now;
+    const timeDiffSeconds = now.seconds - lastTime.seconds;
+
+    if (timeDiffSeconds <= 0) {
+      return { ...poolData, last_reward_time: now };
+    }
+
+    if (poolData.total_staked === 0) {
+      return { ...poolData, last_reward_time: now, updated_at: now };
+    }
+
+    // 30% Flat ROI Logic
+    // Reward = (Staked Tokens * 30% * Token/SOL Price * Time) / Year
+    const SECONDS_IN_YEAR = 365 * 24 * 60 * 60;
+    const ROI_PERCENT = 0.3; // 30% per year
+
+    console.log(
+      `💰 Pool update (sync): ${poolData.total_staked.toLocaleString()} MKIN staked, price: ${tokenPriceSol.toFixed(
         6
       )} SOL/MKIN`
     );
@@ -327,6 +380,8 @@ class StakingService {
     if (!feeSignature)
       throw new StakingError("Fee transaction signature required");
 
+    console.log(`🚀 Starting stake operation for user ${firebaseUid}: ${amount} MKIN`);
+
     // Get user's wallet address from Firestore
     const userRewardDoc = await this.db
       .collection(USER_REWARDS_COLLECTION)
@@ -379,7 +434,7 @@ class StakingService {
       throw new StakingError("Invalid or insufficient token transfer");
     }
 
-    // 2. Check for duplicate transaction
+    // 4. Check for duplicate transaction
     const existingTx = await this.db
       .collection(TRANSACTIONS_COLLECTION)
       .where("signature", "==", txSignature)
@@ -390,95 +445,128 @@ class StakingService {
       throw new StakingError("Transaction already processed");
     }
 
-    // 3. Update staking position in Firestore
-    await this.db.runTransaction(async (t) => {
-      const poolRef = this.db.collection(POOL_COLLECTION).doc(STAKING_POOL_ID);
-      const posRef = this.db.collection(POSITIONS_COLLECTION).doc(firebaseUid);
+    // 5. Pre-fetch price data BEFORE the transaction (critical fix!)
+    // This avoids async operations inside Firestore transaction which can cause
+    // transaction timeouts and silent failures
+    console.log(`📊 Pre-fetching price data before Firestore transaction...`);
+    const { getMkinPriceSOL } = await import("../utils/mkinPrice.js");
+    const tokenPriceSol = await getMkinPriceSOL();
+    const now = admin.firestore.Timestamp.now();
+    console.log(`✅ Price data fetched: ${tokenPriceSol.toFixed(6)} SOL/MKIN`);
 
-      const [poolDoc, posDoc] = await Promise.all([
-        t.get(poolRef),
-        t.get(posRef),
-      ]);
+    // 6. Update staking position in Firestore (atomic transaction)
+    console.log(`📝 Starting Firestore transaction...`);
+    
+    try {
+      await this.db.runTransaction(async (t) => {
+        const poolRef = this.db.collection(POOL_COLLECTION).doc(STAKING_POOL_ID);
+        const posRef = this.db.collection(POSITIONS_COLLECTION).doc(firebaseUid);
 
-      // Initialize Pool if needed
-      let poolData = poolDoc.exists
-        ? poolDoc.data()
-        : {
-            total_staked: 0,
-            reward_pool_sol: 0,
-            acc_reward_per_share: 0,
-            last_reward_time: admin.firestore.Timestamp.now(),
-          };
+        console.log(`   Reading pool and position documents...`);
+        const [poolDoc, posDoc] = await Promise.all([
+          t.get(poolRef),
+          t.get(posRef),
+        ]);
 
-      // Update Pool State (Mint rewards up to now)
-      poolData = await this._calculateNewPoolState(poolData);
+        // Initialize Pool if needed
+        let poolData = poolDoc.exists
+          ? poolDoc.data()
+          : {
+              total_staked: 0,
+              reward_pool_sol: 0,
+              acc_reward_per_share: 0,
+              last_reward_time: now,
+            };
 
-      // Get/Init User Position
-      let posData = posDoc.exists
-        ? posDoc.data()
-        : {
-            user_id: firebaseUid,
-            principal_amount: 0,
-            pending_rewards: 0,
-            total_accrued_sol: 0,
-            total_claimed_sol: 0,
-          };
+        // Update Pool State using pre-fetched price (no async calls here!)
+        poolData = this._calculateNewPoolStateSync(poolData, tokenPriceSol, now);
 
-      // NOTE: We no longer use MasterChef-style acc_reward_per_share/reward_debt
-      // Rewards are calculated purely based on: (principal * 30% * price * time) / year
+        // Get/Init User Position
+        let posData = posDoc.exists
+          ? posDoc.data()
+          : {
+              user_id: firebaseUid,
+              principal_amount: 0,
+              pending_rewards: 0,
+              total_accrued_sol: 0,
+              total_claimed_sol: 0,
+            };
 
-      // 🚀 ADD ENTRY FEE TO REWARD POOL (Self-Sustaining Pool Growth!)
-      poolData.reward_pool_sol =
-        (poolData.reward_pool_sol || 0) + feeData.feeInSol;
-      console.log(
-        `💰 Added ${feeData.feeInSol.toFixed(
-          6
-        )} SOL entry fee to reward pool. New pool: ${poolData.reward_pool_sol.toFixed(
-          4
-        )} SOL`
-      );
+        console.log(`   Current position: ${posData.principal_amount || 0} MKIN`);
 
-      // Update Principal (FULL amount, no deduction)
-      posData.principal_amount += amount; // Full stake amount!
+        // NOTE: We no longer use MasterChef-style acc_reward_per_share/reward_debt
+        // Rewards are calculated purely based on: (principal * 30% * price * time) / year
 
-      // Track stake start time (for client-side reward calculation)
-      if (!posData.stake_start_time) {
-        posData.stake_start_time = admin.firestore.Timestamp.now();
-      }
-      posData.last_stake_time = admin.firestore.Timestamp.now();
+        // 🚀 ADD ENTRY FEE TO REWARD POOL (Self-Sustaining Pool Growth!)
+        poolData.reward_pool_sol =
+          (poolData.reward_pool_sol || 0) + feeData.feeInSol;
+        console.log(
+          `💰 Added ${feeData.feeInSol.toFixed(
+            6
+          )} SOL entry fee to reward pool. New pool: ${poolData.reward_pool_sol.toFixed(
+            4
+          )} SOL`
+        );
 
-      // Update Pool Totals (FULL amount)
-      poolData.total_staked += amount;
+        // Update Principal (FULL amount, no deduction)
+        const previousPrincipal = posData.principal_amount || 0;
+        posData.principal_amount = previousPrincipal + amount; // Full stake amount!
 
-      // Track total entry fees paid by user
-      posData.total_entry_fees_sol =
-        (posData.total_entry_fees_sol || 0) + feeData.feeInSol;
-      posData.total_entry_fees_mkin_value =
-        (posData.total_entry_fees_mkin_value || 0) + feeData.feeInMkin;
+        // Track stake start time (for client-side reward calculation)
+        if (!posData.stake_start_time) {
+          posData.stake_start_time = now;
+        }
+        posData.last_stake_time = now;
 
-      // Writes
-      t.set(poolRef, poolData);
-      t.set(posRef, {
-        ...posData,
-        updated_at: admin.firestore.Timestamp.now(),
+        // Update Pool Totals (FULL amount)
+        poolData.total_staked = (poolData.total_staked || 0) + amount;
+
+        // Track total entry fees paid by user
+        posData.total_entry_fees_sol =
+          (posData.total_entry_fees_sol || 0) + feeData.feeInSol;
+        posData.total_entry_fees_mkin_value =
+          (posData.total_entry_fees_mkin_value || 0) + feeData.feeInMkin;
+
+        console.log(`   New position: ${posData.principal_amount} MKIN (was ${previousPrincipal})`);
+        console.log(`   New pool total: ${poolData.total_staked} MKIN`);
+
+        // Writes - all three writes happen atomically
+        console.log(`   Writing pool data...`);
+        t.set(poolRef, poolData);
+        
+        console.log(`   Writing position data...`);
+        t.set(posRef, {
+          ...posData,
+          updated_at: now,
+        });
+
+        // Log transaction
+        console.log(`   Writing transaction record...`);
+        const txRef = this.db.collection(TRANSACTIONS_COLLECTION).doc();
+        t.set(txRef, {
+          user_id: firebaseUid,
+          type: "STAKE",
+          amount_mkin: amount,
+          signature: txSignature,
+          fee_tx: feeSignature,
+          fee_amount_sol: feeData.feeInSol,
+          fee_amount_mkin_value: feeData.feeInMkin,
+          fee_percent: feeData.feePercent,
+          mkin_price_usd: feeData.mkinPriceUsd,
+          sol_price_usd: feeData.solPriceUsd,
+          timestamp: now,
+        });
+
+        console.log(`   ✅ All writes queued for atomic commit`);
       });
 
-      // Log transaction
-      const txRef = this.db.collection(TRANSACTIONS_COLLECTION).doc();
-      t.set(txRef, {
-        user_id: firebaseUid,
-        type: "STAKE",
-        amount_mkin: amount,
-        signature: txSignature,
-        fee_tx: feeSignature,
-        fee_amount_sol: feeData.feeInSol,
-        fee_amount_mkin_value: feeData.feeInMkin,
-        fee_percent: feeData.feePercent,
-        mkin_price_usd: feeData.mkinPriceUsd,
-        sol_price_usd: feeData.solPriceUsd,
-        timestamp: admin.firestore.Timestamp.now(),
-      });
-    });
+      console.log(`✅ Firestore transaction committed successfully!`);
+    } catch (transactionError) {
+      console.error(`❌ Firestore transaction failed:`, transactionError);
+      throw new StakingError(`Failed to update staking position: ${transactionError.message}`);
+    }
+
+    console.log(`🎉 Stake operation completed successfully for user ${firebaseUid}`);
 
     return {
       success: true,
@@ -495,6 +583,8 @@ class StakingService {
   async claim(firebaseUid, txSignature) {
     if (!txSignature)
       throw new StakingError("Transaction signature required for fee");
+
+    console.log(`🚀 Starting claim operation for user ${firebaseUid}`);
 
     // 1. Calculate dynamic fee based on current SOL price
     const { getFeeInSol } = await import("../utils/solPrice.js");
@@ -521,70 +611,99 @@ class StakingService {
     );
     if (!isValidFee) throw new StakingError("Invalid Fee Transaction");
 
+    // 3. Pre-fetch price data BEFORE the transaction (critical fix!)
+    console.log(`📊 Pre-fetching price data before Firestore transaction...`);
+    const { getMkinPriceSOL } = await import("../utils/mkinPrice.js");
+    const tokenPriceSol = await getMkinPriceSOL();
+    const now = admin.firestore.Timestamp.now();
+    console.log(`✅ Price data fetched: ${tokenPriceSol.toFixed(6)} SOL/MKIN`);
+
     let rewardAmount = 0;
 
-    await this.db.runTransaction(async (t) => {
-      const poolRef = this.db.collection(POOL_COLLECTION).doc(STAKING_POOL_ID);
-      const posRef = this.db.collection(POSITIONS_COLLECTION).doc(firebaseUid);
+    // 4. Update in Firestore (atomic transaction)
+    console.log(`📝 Starting Firestore transaction...`);
 
-      const [poolDoc, posDoc] = await Promise.all([
-        t.get(poolRef),
-        t.get(posRef),
-      ]);
-      if (!posDoc.exists) throw new StakingError("No staking position found");
+    try {
+      await this.db.runTransaction(async (t) => {
+        const poolRef = this.db.collection(POOL_COLLECTION).doc(STAKING_POOL_ID);
+        const posRef = this.db.collection(POSITIONS_COLLECTION).doc(firebaseUid);
 
-      let poolData = poolDoc.data();
-      let posData = posDoc.data();
+        console.log(`   Reading pool and position documents...`);
+        const [poolDoc, posDoc] = await Promise.all([
+          t.get(poolRef),
+          t.get(posRef),
+        ]);
+        if (!posDoc.exists) throw new StakingError("No staking position found");
 
-      // Update Pool
-      poolData = await this._calculateNewPoolState(poolData);
+        let poolData = poolDoc.data();
+        let posData = posDoc.data();
 
-      // 🚀 ADD FEE TO REWARD POOL (Self-Sustaining Pool)
-      poolData.reward_pool_sol = (poolData.reward_pool_sol || 0) + feeAmount;
-      console.log(
-        `💰 Added ${feeAmount.toFixed(
-          4
-        )} SOL fee to reward pool. New pool: ${poolData.reward_pool_sol.toFixed(
-          4
-        )} SOL`
-      );
+        console.log(`   Current position: ${posData.principal_amount || 0} MKIN, pending: ${posData.pending_rewards || 0} SOL`);
 
-      // Calc Pending (using checkpoint-based 30% ROI)
-      // The real-time calculation in getOverview handles accrual since last update
-      let totalPending = posData.pending_rewards || 0;
+        // Update Pool using pre-fetched price (no async calls here!)
+        poolData = this._calculateNewPoolStateSync(poolData, tokenPriceSol, now);
 
-      if (totalPending <= 0) throw new StakingError("No rewards to claim");
+        // 🚀 ADD FEE TO REWARD POOL (Self-Sustaining Pool)
+        poolData.reward_pool_sol = (poolData.reward_pool_sol || 0) + feeAmount;
+        console.log(
+          `💰 Added ${feeAmount.toFixed(
+            4
+          )} SOL fee to reward pool. New pool: ${poolData.reward_pool_sol.toFixed(
+            4
+          )} SOL`
+        );
 
-      // Payout Logic
-      rewardAmount = totalPending;
+        // Calc Pending (using checkpoint-based 30% ROI)
+        // The real-time calculation in getOverview handles accrual since last update
+        let totalPending = posData.pending_rewards || 0;
 
-      // Reset User pending rewards
-      posData.pending_rewards = 0;
-      posData.total_claimed_sol =
-        (posData.total_claimed_sol || 0) + rewardAmount;
-      posData.total_accrued_sol =
-        (posData.total_accrued_sol || 0) + rewardAmount;
+        if (totalPending <= 0) throw new StakingError("No rewards to claim");
 
-      // Writes
-      t.set(poolRef, poolData);
-      t.set(posRef, {
-        ...posData,
-        updated_at: admin.firestore.Timestamp.now(),
+        // Payout Logic
+        rewardAmount = totalPending;
+
+        // Reset User pending rewards
+        const previousPending = posData.pending_rewards || 0;
+        posData.pending_rewards = 0;
+        posData.total_claimed_sol =
+          (posData.total_claimed_sol || 0) + rewardAmount;
+        posData.total_accrued_sol =
+          (posData.total_accrued_sol || 0) + rewardAmount;
+
+        console.log(`   Claiming ${rewardAmount.toFixed(9)} SOL (was ${previousPending.toFixed(9)} pending)`);
+
+        // Writes - all writes happen atomically
+        console.log(`   Writing pool data...`);
+        t.set(poolRef, poolData);
+        
+        console.log(`   Writing position data...`);
+        t.set(posRef, {
+          ...posData,
+          updated_at: now,
+        });
+
+        console.log(`   Writing transaction record...`);
+        const txRef = this.db.collection(TRANSACTIONS_COLLECTION).doc();
+        t.set(txRef, {
+          user_id: firebaseUid,
+          type: "CLAIM",
+          amount_sol: rewardAmount,
+          fee_tx: txSignature,
+          fee_amount_sol: feeAmount,
+          fee_amount_usd: usdAmount,
+          timestamp: now,
+        });
+
+        console.log(`   ✅ All writes queued for atomic commit`);
       });
 
-      const txRef = this.db.collection(TRANSACTIONS_COLLECTION).doc();
-      t.set(txRef, {
-        user_id: firebaseUid,
-        type: "CLAIM",
-        amount_sol: rewardAmount,
-        fee_tx: txSignature,
-        fee_amount_sol: feeAmount,
-        fee_amount_usd: usdAmount,
-        timestamp: admin.firestore.Timestamp.now(),
-      });
-    });
+      console.log(`✅ Firestore transaction committed successfully!`);
+    } catch (transactionError) {
+      console.error(`❌ Firestore transaction failed:`, transactionError);
+      throw new StakingError(`Failed to update claim position: ${transactionError.message}`);
+    }
 
-    // 2. Send SOL to User (Using Treasury Private Key)
+    // 5. Send SOL to User (Using Treasury Private Key)
     // NOTE: This must be done AFTER the DB transaction commits to avoid sending funds if DB fails.
     // However, if this fails, user loses their claim record state?
     // Ideally: We mark as "Processing" in DB, send SOL, then mark "Complete".
@@ -605,6 +724,8 @@ class StakingService {
       throw new StakingError("Payout failed. Please contact support.");
     }
 
+    console.log(`🎉 Claim operation completed successfully for user ${firebaseUid}`);
+
     return {
       success: true,
       amount: rewardAmount,
@@ -623,6 +744,8 @@ class StakingService {
     if (amount <= 0) throw new StakingError("Invalid amount");
     if (!txSignature)
       throw new StakingError("Transaction signature required for fee");
+
+    console.log(`🚀 Starting unstake operation for user ${firebaseUid}: ${amount} MKIN`);
 
     // Get user's wallet address
     const userRewardDoc = await this.db
@@ -659,66 +782,103 @@ class StakingService {
     );
     if (!isValidFee) throw new StakingError("Invalid Fee Transaction");
 
-    await this.db.runTransaction(async (t) => {
-      const poolRef = this.db.collection(POOL_COLLECTION).doc(STAKING_POOL_ID);
-      const posRef = this.db.collection(POSITIONS_COLLECTION).doc(firebaseUid);
+    // 3. Pre-fetch price data BEFORE the transaction (critical fix!)
+    console.log(`📊 Pre-fetching price data before Firestore transaction...`);
+    const { getMkinPriceSOL } = await import("../utils/mkinPrice.js");
+    const tokenPriceSol = await getMkinPriceSOL();
+    const now = admin.firestore.Timestamp.now();
+    console.log(`✅ Price data fetched: ${tokenPriceSol.toFixed(6)} SOL/MKIN`);
 
-      const [poolDoc, posDoc] = await Promise.all([
-        t.get(poolRef),
-        t.get(posRef),
-      ]);
+    // 4. Update in Firestore (atomic transaction)
+    console.log(`📝 Starting Firestore transaction...`);
 
-      if (!posDoc.exists) throw new StakingError("No staking position found");
-      let posData = posDoc.data();
+    try {
+      await this.db.runTransaction(async (t) => {
+        const poolRef = this.db.collection(POOL_COLLECTION).doc(STAKING_POOL_ID);
+        const posRef = this.db.collection(POSITIONS_COLLECTION).doc(firebaseUid);
 
-      if (posData.principal_amount < amount) {
-        throw new StakingError("Insufficient staked amount");
-      }
+        console.log(`   Reading pool and position documents...`);
+        const [poolDoc, posDoc] = await Promise.all([
+          t.get(poolRef),
+          t.get(posRef),
+        ]);
 
-      let poolData = poolDoc.exists ? poolDoc.data() : await this.getPoolData();
+        if (!posDoc.exists) throw new StakingError("No staking position found");
+        let posData = posDoc.data();
 
-      // 1. Update Pool
-      poolData = await this._calculateNewPoolState(poolData);
+        console.log(`   Current position: ${posData.principal_amount || 0} MKIN`);
 
-      // 🚀 ADD FEE TO REWARD POOL (Self-Sustaining Pool)
-      poolData.reward_pool_sol = (poolData.reward_pool_sol || 0) + feeAmount;
-      console.log(
-        `💰 Added ${feeAmount.toFixed(
-          4
-        )} SOL fee to reward pool. New pool: ${poolData.reward_pool_sol.toFixed(
-          4
-        )} SOL`
-      );
+        if (posData.principal_amount < amount) {
+          throw new StakingError("Insufficient staked amount");
+        }
 
-      // 2. Harvest Pending Rewards (checkpoint them, don't pay out)
-      // The pending rewards will remain and can be claimed later
-      // No need to update reward_debt since we're not using MasterChef logic
+        let poolData = poolDoc.exists 
+          ? poolDoc.data() 
+          : {
+              total_staked: 0,
+              reward_pool_sol: 0,
+              acc_reward_per_share: 0,
+              last_reward_time: now,
+            };
 
-      // 3. Update Principal
-      posData.principal_amount -= amount;
+        // 1. Update Pool using pre-fetched price (no async calls here!)
+        poolData = this._calculateNewPoolStateSync(poolData, tokenPriceSol, now);
 
-      // 4. Update Pool Total
-      poolData.total_staked -= amount;
-      if (poolData.total_staked < 0) poolData.total_staked = 0;
+        // 🚀 ADD FEE TO REWARD POOL (Self-Sustaining Pool)
+        poolData.reward_pool_sol = (poolData.reward_pool_sol || 0) + feeAmount;
+        console.log(
+          `💰 Added ${feeAmount.toFixed(
+            4
+          )} SOL fee to reward pool. New pool: ${poolData.reward_pool_sol.toFixed(
+            4
+          )} SOL`
+        );
 
-      // Writes
-      t.set(poolRef, poolData);
-      t.set(posRef, {
-        ...posData,
-        updated_at: admin.firestore.Timestamp.now(),
+        // 2. Harvest Pending Rewards (checkpoint them, don't pay out)
+        // The pending rewards will remain and can be claimed later
+        // No need to update reward_debt since we're not using MasterChef logic
+
+        // 3. Update Principal
+        const previousPrincipal = posData.principal_amount;
+        posData.principal_amount -= amount;
+
+        // 4. Update Pool Total
+        poolData.total_staked = (poolData.total_staked || 0) - amount;
+        if (poolData.total_staked < 0) poolData.total_staked = 0;
+
+        console.log(`   New position: ${posData.principal_amount} MKIN (was ${previousPrincipal})`);
+        console.log(`   New pool total: ${poolData.total_staked} MKIN`);
+
+        // Writes - all writes happen atomically
+        console.log(`   Writing pool data...`);
+        t.set(poolRef, poolData);
+        
+        console.log(`   Writing position data...`);
+        t.set(posRef, {
+          ...posData,
+          updated_at: now,
+        });
+
+        console.log(`   Writing transaction record...`);
+        const txRef = this.db.collection(TRANSACTIONS_COLLECTION).doc();
+        t.set(txRef, {
+          user_id: firebaseUid,
+          type: "UNSTAKE",
+          amount_mkin: amount,
+          fee_tx: txSignature,
+          fee_amount_sol: feeAmount,
+          fee_amount_usd: usdAmount,
+          timestamp: now,
+        });
+
+        console.log(`   ✅ All writes queued for atomic commit`);
       });
 
-      const txRef = this.db.collection(TRANSACTIONS_COLLECTION).doc();
-      t.set(txRef, {
-        user_id: firebaseUid,
-        type: "UNSTAKE",
-        amount_mkin: amount,
-        fee_tx: txSignature,
-        fee_amount_sol: feeAmount,
-        fee_amount_usd: usdAmount,
-        timestamp: admin.firestore.Timestamp.now(),
-      });
-    });
+      console.log(`✅ Firestore transaction committed successfully!`);
+    } catch (transactionError) {
+      console.error(`❌ Firestore transaction failed:`, transactionError);
+      throw new StakingError(`Failed to update unstake position: ${transactionError.message}`);
+    }
 
     // 5. Send tokens from vault to user
     let tokenSignature = null;
@@ -731,6 +891,8 @@ class StakingService {
       console.error("Failed to send tokens from vault:", e);
       throw new StakingError("Token transfer failed. Please contact support.");
     }
+
+    console.log(`🎉 Unstake operation completed successfully for user ${firebaseUid}`);
 
     return {
       success: true,
