@@ -2,6 +2,12 @@ import NFTVerificationService from './nftVerification.js';
 import { getFirestore } from 'firebase-admin/firestore';
 import admin from 'firebase-admin';
 
+// Helius DAS API for fetching NFT metadata
+const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
+const HELIUS_RPC_URL = HELIUS_API_KEY 
+  ? `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`
+  : null;
+
 /**
  * BoosterService - Detects NFTs in user wallets and assigns appropriate staking boosters
  *
@@ -31,7 +37,11 @@ class BoosterService {
           "E21XaE8zaoBZwt2roq7KppxjfFhrcDMpFa7ZMWsFreUh",
           "FMG9Be91LgVd9cb2YX15hPBFJ3iUhH2guB7RbCBFbDbg",
           "J4koZzipRmLjc4QzSbRsn8CdXCZCHUUmTbCSqAtvSJFZ",
-          "khoX7jkUK98uMPv2yF9H9ftLJKTesgpmWbuvKpRvW8h"
+          "khoX7jkUK98uMPv2yF9H9ftLJKTesgpmWbuvKpRvW8h",
+          // New Random 1/1 boosters added 2026-01-09
+          "LWVzjTiSKBZDWvWP4RmsXffqctmDH7GeZjchupwd1HF",
+          "EXA4nEohnyY9XTeAzNsV3f9GXcYUh8cCpWV9qbjf1egS",
+          "HchoYoGU9ZnVffHaEo1Aw9xitvqyhiP575GpebiSXNK4"
         ]
       },
       CUSTOM_1_1: {
@@ -45,7 +55,9 @@ class BoosterService {
           "4G44MShUoWPtyQog7fCH6XTgNHqwEjTtcuGpHg4BxJ1p",
           "AukNaSscLLUKZuWm5eRxxukZ76kNt5iTB7Raeeevrhw",
           "HiW5i4yiumjcZHaHpgjAgHdCRZgpX3j6s9vSeukpxuAF",
-          "PUjmyCPfyEd92D2cm4pppjGB1ddX6wnnttmEzxBHErD"
+          "PUjmyCPfyEd92D2cm4pppjGB1ddX6wnnttmEzxBHErD",
+          // New Custom 1/1 booster added 2026-01-09
+          "5j9xjtXjC3ZwfLsTHnZZEZKKa7uR75m8aXyS4rBbt8CB"
         ]
       },
       SOLANA_MINER: {
@@ -382,6 +394,161 @@ class BoosterService {
       if (now - value.timestamp > this.CACHE_TTL) {
         this.cache.delete(key);
       }
+    }
+  }
+
+  /**
+   * Fetch NFT metadata including image URL for a given mint address
+   * Uses Helius DAS API for fast, reliable metadata fetching
+   * @param {string} mintAddress - The NFT mint address
+   * @returns {Promise<Object|null>} NFT metadata with image, name, etc.
+   */
+  async getNFTMetadata(mintAddress) {
+    try {
+      // Check cache first
+      const cacheKey = `nft_metadata_${mintAddress}`;
+      const cached = this.cache.get(cacheKey);
+      if (cached && (Date.now() - cached.timestamp) < this.CACHE_TTL * 12) { // 1 hour cache for metadata
+        return cached.data;
+      }
+
+      if (!HELIUS_RPC_URL) {
+        console.warn('⚠️ HELIUS_API_KEY not set, cannot fetch NFT metadata');
+        return null;
+      }
+
+      console.log(`🖼️ Fetching NFT metadata for ${mintAddress}...`);
+
+      const response = await fetch(HELIUS_RPC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 'booster-metadata',
+          method: 'getAsset',
+          params: { id: mintAddress }
+        })
+      });
+
+      if (!response.ok) {
+        console.error(`❌ Failed to fetch metadata: ${response.status}`);
+        return null;
+      }
+
+      const data = await response.json();
+      
+      if (data.error) {
+        console.error(`❌ Helius API error:`, data.error);
+        return null;
+      }
+
+      const asset = data.result;
+      if (!asset) {
+        console.warn(`⚠️ No asset data found for ${mintAddress}`);
+        return null;
+      }
+
+      // Extract relevant metadata
+      const metadata = {
+        mint: mintAddress,
+        name: asset.content?.metadata?.name || 'Unknown NFT',
+        symbol: asset.content?.metadata?.symbol || '',
+        description: asset.content?.metadata?.description || '',
+        image: asset.content?.links?.image || asset.content?.files?.[0]?.uri || null,
+        attributes: asset.content?.metadata?.attributes || [],
+        collection: asset.grouping?.find(g => g.group_key === 'collection')?.group_value || null,
+      };
+
+      // Cache the result
+      this.cache.set(cacheKey, {
+        data: metadata,
+        timestamp: Date.now()
+      });
+
+      console.log(`✅ Fetched metadata for ${metadata.name}: ${metadata.image ? 'has image' : 'no image'}`);
+      return metadata;
+
+    } catch (error) {
+      console.error(`❌ Error fetching NFT metadata for ${mintAddress}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Fetch metadata for multiple NFT mint addresses
+   * @param {string[]} mintAddresses - Array of mint addresses
+   * @returns {Promise<Object[]>} Array of NFT metadata objects
+   */
+  async getBatchNFTMetadata(mintAddresses) {
+    if (!mintAddresses || mintAddresses.length === 0) {
+      return [];
+    }
+
+    try {
+      // Fetch metadata for each mint in parallel (with concurrency limit)
+      const results = await Promise.all(
+        mintAddresses.slice(0, 10).map(mint => this.getNFTMetadata(mint))
+      );
+
+      return results.filter(Boolean); // Remove null results
+    } catch (error) {
+      console.error('❌ Error fetching batch NFT metadata:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get boosters with full NFT metadata including images
+   * This is the main method for frontend to get displayable booster data
+   * @param {string} firebaseUid - User's Firebase UID
+   * @returns {Promise<Object>} Boosters with metadata
+   */
+  async getBoostersWithMetadata(firebaseUid) {
+    try {
+      // First get the user's boosters
+      const boosters = await this.getUserBoosters(firebaseUid);
+      
+      if (!boosters || boosters.length === 0) {
+        return {
+          boosters: [],
+          stackedMultiplier: 1.0,
+          nftDetails: []
+        };
+      }
+
+      // Collect all mint addresses from all boosters
+      const allMints = boosters.flatMap(b => b.mints || []);
+      
+      // Fetch metadata for all NFTs
+      const nftMetadata = await this.getBatchNFTMetadata(allMints);
+      
+      // Create a map for quick lookup
+      const metadataMap = new Map(nftMetadata.map(m => [m.mint, m]));
+
+      // Enrich boosters with NFT details
+      const enrichedBoosters = boosters.map(booster => ({
+        ...booster,
+        nftDetails: (booster.mints || []).map(mint => metadataMap.get(mint) || {
+          mint,
+          name: 'Unknown NFT',
+          image: null
+        })
+      }));
+
+      return {
+        boosters: enrichedBoosters,
+        stackedMultiplier: this.calculateStackedMultiplier(boosters),
+        nftDetails: nftMetadata
+      };
+
+    } catch (error) {
+      console.error(`❌ Error getting boosters with metadata for ${firebaseUid}:`, error);
+      return {
+        boosters: [],
+        stackedMultiplier: 1.0,
+        nftDetails: [],
+        error: error.message
+      };
     }
   }
 }
