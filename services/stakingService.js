@@ -568,6 +568,22 @@ class StakingService {
 
     console.log(`🎉 Stake operation completed successfully for user ${firebaseUid}`);
 
+    // 7. Automatically detect and assign boosters after successful stake
+    // This runs asynchronously to not block the stake response
+    console.log(`🔍 Triggering booster detection for user ${firebaseUid}...`);
+    this.boosterService.detectAndAssignBoosters(firebaseUid)
+      .then(detectedBoosters => {
+        if (detectedBoosters && detectedBoosters.length > 0) {
+          console.log(`✨ Boosters detected for ${firebaseUid}:`, detectedBoosters.map(b => b.name).join(', '));
+        } else {
+          console.log(`📭 No boosters detected for ${firebaseUid}`);
+        }
+      })
+      .catch(err => {
+        console.error(`⚠️ Booster detection failed for ${firebaseUid}:`, err.message);
+        // Don't fail the stake operation if booster detection fails
+      });
+
     return {
       success: true,
       amount,

@@ -108,6 +108,29 @@ router.post("/refresh-all", verifyAuth, async (req, res) => {
   }
 });
 
+// GET /api/boosters/with-metadata - Get boosters with full NFT metadata including images
+router.get("/with-metadata", verifyAuth, async (req, res) => {
+  try {
+    console.log(`🖼️ Fetching boosters with metadata for user ${req.user.uid}`);
+    
+    const result = await boosterService.getBoostersWithMetadata(req.user.uid);
+    
+    res.json({
+      success: true,
+      data: {
+        activeBoosters: result.boosters,
+        stackedMultiplier: result.stackedMultiplier,
+        nftDetails: result.nftDetails,
+        boosterCount: result.boosters.length,
+        lastUpdated: result.boosters.length > 0 ? result.boosters[0].detectedAt : null
+      }
+    });
+  } catch (e) {
+    console.error("Error getting boosters with metadata:", e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // GET /api/boosters/history - Get booster change history for authenticated user
 router.get("/history", verifyAuth, async (req, res) => {
   try {
