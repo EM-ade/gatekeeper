@@ -374,44 +374,76 @@ class StakingService {
    * Fee goes to reward pool to grow APR for everyone
    */
   async stake(firebaseUid, amount, txSignature, feeSignature) {
-    if (amount <= 0) throw new StakingError("Invalid amount");
-    if (!txSignature)
+    const operationId = `STAKE-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const logPrefix = `[${operationId}]`;
+    
+    console.log(`\n${"=".repeat(80)}`);
+    console.log(`${logPrefix} 🚀 STAKE OPERATION STARTED`);
+    console.log(`${"=".repeat(80)}`);
+    console.log(`${logPrefix} Timestamp: ${new Date().toISOString()}`);
+    console.log(`${logPrefix} User ID: ${firebaseUid}`);
+    console.log(`${logPrefix} Amount: ${amount} MKIN`);
+    console.log(`${logPrefix} Token TX Signature: ${txSignature}`);
+    console.log(`${logPrefix} Fee TX Signature: ${feeSignature}`);
+    console.log(`${logPrefix} Network: ${this.network || 'initializing...'}`);
+    
+    if (amount <= 0) {
+      console.error(`${logPrefix} ❌ VALIDATION ERROR: Invalid amount (${amount})`);
+      throw new StakingError("Invalid amount");
+    }
+    if (!txSignature) {
+      console.error(`${logPrefix} ❌ VALIDATION ERROR: Missing token transaction signature`);
       throw new StakingError("Token transaction signature required");
-    if (!feeSignature)
+    }
+    if (!feeSignature) {
+      console.error(`${logPrefix} ❌ VALIDATION ERROR: Missing fee transaction signature`);
       throw new StakingError("Fee transaction signature required");
+    }
 
-    console.log(`🚀 Starting stake operation for user ${firebaseUid}: ${amount} MKIN`);
+    console.log(`${logPrefix} ✅ Input validation passed`);
 
     // Get user's wallet address from Firestore
+    console.log(`${logPrefix} 📖 Fetching user wallet from Firestore...`);
     const userRewardDoc = await this.db
       .collection(USER_REWARDS_COLLECTION)
       .doc(firebaseUid)
       .get();
-    if (!userRewardDoc.exists) throw new StakingError("User not found");
+    if (!userRewardDoc.exists) {
+      console.error(`${logPrefix} ❌ USER NOT FOUND: No document in ${USER_REWARDS_COLLECTION} for ${firebaseUid}`);
+      throw new StakingError("User not found");
+    }
 
     const userWallet = userRewardDoc.data().walletAddress;
-    if (!userWallet) throw new StakingError("User wallet address not found");
+    if (!userWallet) {
+      console.error(`${logPrefix} ❌ NO WALLET: User ${firebaseUid} has no walletAddress field`);
+      throw new StakingError("User wallet address not found");
+    }
+    console.log(`${logPrefix} ✅ User wallet found: ${userWallet}`);
 
     // 1. Calculate 5% entry fee in SOL
+    console.log(`${logPrefix} 💰 Step 1: Calculating 5% entry fee...`);
     const { calculateStakingFee } = await import("../utils/mkinPrice.js");
     const feeData = await calculateStakingFee(amount, 5);
-    console.log(
-      `💰 Entry fee for ${amount} MKIN: ${feeData.feeInSol.toFixed(6)} SOL (${
-        feeData.feeInMkin
-      } MKIN value)`
-    );
+    console.log(`${logPrefix} Fee Calculation Results:`);
+    console.log(`${logPrefix}   - Fee in SOL: ${feeData.feeInSol.toFixed(9)} SOL`);
+    console.log(`${logPrefix}   - Fee in MKIN value: ${feeData.feeInMkin} MKIN`);
+    console.log(`${logPrefix}   - Fee percent: ${feeData.feePercent}%`);
+    console.log(`${logPrefix}   - MKIN price (USD): $${feeData.mkinPriceUsd}`);
+    console.log(`${logPrefix}   - SOL price (USD): $${feeData.solPriceUsd}`);
 
     // 2. Verify fee payment (5% in SOL)
     // Allow 1% tolerance for rounding/timing differences between frontend and backend
+    console.log(`${logPrefix} 🔍 Step 2: Verifying fee payment...`);
     const tolerance = 0.01; // 1%
     const minFee = feeData.feeInSol * (1 - tolerance);
     const maxFee = feeData.feeInSol * (1 + tolerance);
 
-    console.log(`🔍 Verifying fee payment:`);
-    console.log(`   Expected: ${feeData.feeInSol.toFixed(6)} SOL`);
-    console.log(
-      `   Acceptable range: ${minFee.toFixed(6)} - ${maxFee.toFixed(6)} SOL`
-    );
+    console.log(`${logPrefix} Fee Verification Parameters:`);
+    console.log(`${logPrefix}   - Expected: ${feeData.feeInSol.toFixed(9)} SOL`);
+    console.log(`${logPrefix}   - Tolerance: ${tolerance * 100}%`);
+    console.log(`${logPrefix}   - Min acceptable: ${minFee.toFixed(9)} SOL`);
+    console.log(`${logPrefix}   - Max acceptable: ${maxFee.toFixed(9)} SOL`);
+    console.log(`${logPrefix}   - Fee signature: ${feeSignature}`);
 
     const isValidFee = await this._verifySolTransfer(
       feeSignature,
@@ -419,22 +451,35 @@ class StakingService {
       maxFee
     );
     if (!isValidFee) {
-      console.error(`❌ Fee verification failed!`);
+      console.error(`${logPrefix} ❌ FEE VERIFICATION FAILED!`);
+      console.error(`${logPrefix}   - Signature: ${feeSignature}`);
+      console.error(`${logPrefix}   - Expected range: ${minFee.toFixed(9)} - ${maxFee.toFixed(9)} SOL`);
       throw new StakingError("Invalid staking fee payment");
     }
-    console.log(`✅ Fee payment verified: ${feeData.feeInSol.toFixed(6)} SOL`);
+    console.log(`${logPrefix} ✅ Fee payment verified: ${feeData.feeInSol.toFixed(9)} SOL`);
 
     // 3. Verify token transfer to vault
+    console.log(`${logPrefix} 🔍 Step 3: Verifying token transfer to vault...`);
+    console.log(`${logPrefix}   - Token TX signature: ${txSignature}`);
+    console.log(`${logPrefix}   - Expected amount: ${amount} MKIN`);
+    console.log(`${logPrefix}   - From wallet: ${userWallet}`);
+    
     const isValidTransfer = await this._verifyTokenTransfer(
       txSignature,
       amount,
       userWallet
     );
     if (!isValidTransfer) {
+      console.error(`${logPrefix} ❌ TOKEN TRANSFER VERIFICATION FAILED!`);
+      console.error(`${logPrefix}   - Signature: ${txSignature}`);
+      console.error(`${logPrefix}   - Amount: ${amount} MKIN`);
+      console.error(`${logPrefix}   - User wallet: ${userWallet}`);
       throw new StakingError("Invalid or insufficient token transfer");
     }
+    console.log(`${logPrefix} ✅ Token transfer verified: ${amount} MKIN`);
 
     // 4. Check for duplicate transaction
+    console.log(`${logPrefix} 🔍 Step 4: Checking for duplicate transaction...`);
     const existingTx = await this.db
       .collection(TRANSACTIONS_COLLECTION)
       .where("signature", "==", txSignature)
@@ -442,31 +487,42 @@ class StakingService {
       .get();
 
     if (!existingTx.empty) {
+      console.error(`${logPrefix} ❌ DUPLICATE TRANSACTION DETECTED!`);
+      console.error(`${logPrefix}   - Signature: ${txSignature}`);
+      console.error(`${logPrefix}   - Existing doc ID: ${existingTx.docs[0].id}`);
       throw new StakingError("Transaction already processed");
     }
+    console.log(`${logPrefix} ✅ No duplicate found`);
 
     // 5. Pre-fetch price data BEFORE the transaction (critical fix!)
     // This avoids async operations inside Firestore transaction which can cause
     // transaction timeouts and silent failures
-    console.log(`📊 Pre-fetching price data before Firestore transaction...`);
+    console.log(`${logPrefix} 📊 Step 5: Pre-fetching price data...`);
     const { getMkinPriceSOL } = await import("../utils/mkinPrice.js");
     const tokenPriceSol = await getMkinPriceSOL();
     const now = admin.firestore.Timestamp.now();
-    console.log(`✅ Price data fetched: ${tokenPriceSol.toFixed(6)} SOL/MKIN`);
+    console.log(`${logPrefix} ✅ Price data fetched: ${tokenPriceSol.toFixed(9)} SOL/MKIN`);
 
     // 6. Update staking position in Firestore (atomic transaction)
-    console.log(`📝 Starting Firestore transaction...`);
+    console.log(`${logPrefix} 📝 Step 6: Starting Firestore transaction...`);
+    console.log(`${logPrefix}   - Pool collection: ${POOL_COLLECTION}`);
+    console.log(`${logPrefix}   - Pool doc ID: ${STAKING_POOL_ID}`);
+    console.log(`${logPrefix}   - Position collection: ${POSITIONS_COLLECTION}`);
+    console.log(`${logPrefix}   - Position doc ID: ${firebaseUid}`);
     
     try {
       await this.db.runTransaction(async (t) => {
         const poolRef = this.db.collection(POOL_COLLECTION).doc(STAKING_POOL_ID);
         const posRef = this.db.collection(POSITIONS_COLLECTION).doc(firebaseUid);
 
-        console.log(`   Reading pool and position documents...`);
+        console.log(`${logPrefix}   📖 Reading pool and position documents...`);
         const [poolDoc, posDoc] = await Promise.all([
           t.get(poolRef),
           t.get(posRef),
         ]);
+
+        console.log(`${logPrefix}   - Pool doc exists: ${poolDoc.exists}`);
+        console.log(`${logPrefix}   - Position doc exists: ${posDoc.exists}`);
 
         // Initialize Pool if needed
         let poolData = poolDoc.exists
@@ -477,6 +533,9 @@ class StakingService {
               acc_reward_per_share: 0,
               last_reward_time: now,
             };
+
+        console.log(`${logPrefix}   - Pool total_staked (before): ${poolData.total_staked || 0} MKIN`);
+        console.log(`${logPrefix}   - Pool reward_pool_sol: ${poolData.reward_pool_sol || 0} SOL`);
 
         // Update Pool State using pre-fetched price (no async calls here!)
         poolData = this._calculateNewPoolStateSync(poolData, tokenPriceSol, now);
@@ -492,34 +551,35 @@ class StakingService {
               total_claimed_sol: 0,
             };
 
-        console.log(`   Current position: ${posData.principal_amount || 0} MKIN`);
+        const previousPrincipal = posData.principal_amount || 0;
+        console.log(`${logPrefix}   - User principal (before): ${previousPrincipal} MKIN`);
+        console.log(`${logPrefix}   - User pending_rewards: ${posData.pending_rewards || 0} SOL`);
+        console.log(`${logPrefix}   - User total_claimed_sol: ${posData.total_claimed_sol || 0} SOL`);
 
         // NOTE: We no longer use MasterChef-style acc_reward_per_share/reward_debt
         // Rewards are calculated purely based on: (principal * 30% * price * time) / year
 
         // 🚀 ADD ENTRY FEE TO REWARD POOL (Self-Sustaining Pool Growth!)
-        poolData.reward_pool_sol =
-          (poolData.reward_pool_sol || 0) + feeData.feeInSol;
-        console.log(
-          `💰 Added ${feeData.feeInSol.toFixed(
-            6
-          )} SOL entry fee to reward pool. New pool: ${poolData.reward_pool_sol.toFixed(
-            4
-          )} SOL`
-        );
+        const previousRewardPool = poolData.reward_pool_sol || 0;
+        poolData.reward_pool_sol = previousRewardPool + feeData.feeInSol;
+        console.log(`${logPrefix}   💰 Entry fee added to reward pool:`);
+        console.log(`${logPrefix}     - Fee: ${feeData.feeInSol.toFixed(9)} SOL`);
+        console.log(`${logPrefix}     - Pool before: ${previousRewardPool.toFixed(9)} SOL`);
+        console.log(`${logPrefix}     - Pool after: ${poolData.reward_pool_sol.toFixed(9)} SOL`);
 
         // Update Principal (FULL amount, no deduction)
-        const previousPrincipal = posData.principal_amount || 0;
         posData.principal_amount = previousPrincipal + amount; // Full stake amount!
 
         // Track stake start time (for client-side reward calculation)
         if (!posData.stake_start_time) {
           posData.stake_start_time = now;
+          console.log(`${logPrefix}   ⏰ First stake - setting stake_start_time`);
         }
         posData.last_stake_time = now;
 
         // Update Pool Totals (FULL amount)
-        poolData.total_staked = (poolData.total_staked || 0) + amount;
+        const previousPoolTotal = poolData.total_staked || 0;
+        poolData.total_staked = previousPoolTotal + amount;
 
         // Track total entry fees paid by user
         posData.total_entry_fees_sol =
@@ -527,23 +587,33 @@ class StakingService {
         posData.total_entry_fees_mkin_value =
           (posData.total_entry_fees_mkin_value || 0) + feeData.feeInMkin;
 
-        console.log(`   New position: ${posData.principal_amount} MKIN (was ${previousPrincipal})`);
-        console.log(`   New pool total: ${poolData.total_staked} MKIN`);
+        console.log(`${logPrefix}   📊 Position Update Summary:`);
+        console.log(`${logPrefix}     - Principal: ${previousPrincipal} → ${posData.principal_amount} MKIN (+${amount})`);
+        console.log(`${logPrefix}     - Total entry fees: ${posData.total_entry_fees_sol.toFixed(9)} SOL`);
+        console.log(`${logPrefix}   📊 Pool Update Summary:`);
+        console.log(`${logPrefix}     - Total staked: ${previousPoolTotal} → ${poolData.total_staked} MKIN (+${amount})`);
 
         // Writes - all three writes happen atomically
-        console.log(`   Writing pool data...`);
+        console.log(`${logPrefix}   ✍️ Writing pool data...`);
         t.set(poolRef, poolData);
         
-        console.log(`   Writing position data...`);
-        t.set(posRef, {
+        console.log(`${logPrefix}   ✍️ Writing position data...`);
+        const positionToWrite = {
           ...posData,
           updated_at: now,
-        });
+        };
+        console.log(`${logPrefix}   Position data to write:`, JSON.stringify({
+          user_id: positionToWrite.user_id,
+          principal_amount: positionToWrite.principal_amount,
+          pending_rewards: positionToWrite.pending_rewards,
+          total_entry_fees_sol: positionToWrite.total_entry_fees_sol,
+        }));
+        t.set(posRef, positionToWrite);
 
         // Log transaction
-        console.log(`   Writing transaction record...`);
+        console.log(`${logPrefix}   ✍️ Writing transaction record...`);
         const txRef = this.db.collection(TRANSACTIONS_COLLECTION).doc();
-        t.set(txRef, {
+        const txData = {
           user_id: firebaseUid,
           type: "STAKE",
           amount_mkin: amount,
@@ -555,41 +625,57 @@ class StakingService {
           mkin_price_usd: feeData.mkinPriceUsd,
           sol_price_usd: feeData.solPriceUsd,
           timestamp: now,
-        });
+        };
+        console.log(`${logPrefix}   Transaction record:`, JSON.stringify({
+          type: txData.type,
+          amount_mkin: txData.amount_mkin,
+          fee_amount_sol: txData.fee_amount_sol,
+        }));
+        t.set(txRef, txData);
 
-        console.log(`   ✅ All writes queued for atomic commit`);
+        console.log(`${logPrefix}   ✅ All writes queued for atomic commit`);
       });
 
-      console.log(`✅ Firestore transaction committed successfully!`);
+      console.log(`${logPrefix} ✅ Firestore transaction committed successfully!`);
     } catch (transactionError) {
-      console.error(`❌ Firestore transaction failed:`, transactionError);
+      console.error(`${logPrefix} ❌ FIRESTORE TRANSACTION FAILED!`);
+      console.error(`${logPrefix}   - Error name: ${transactionError.name}`);
+      console.error(`${logPrefix}   - Error message: ${transactionError.message}`);
+      console.error(`${logPrefix}   - Error stack: ${transactionError.stack}`);
       throw new StakingError(`Failed to update staking position: ${transactionError.message}`);
     }
 
-    console.log(`🎉 Stake operation completed successfully for user ${firebaseUid}`);
+    console.log(`${logPrefix} 🎉 STAKE OPERATION COMPLETED SUCCESSFULLY`);
+    console.log(`${logPrefix}   - User: ${firebaseUid}`);
+    console.log(`${logPrefix}   - Amount: ${amount} MKIN`);
+    console.log(`${"=".repeat(80)}\n`);
 
     // 7. Automatically detect and assign boosters after successful stake
     // This runs asynchronously to not block the stake response
-    console.log(`🔍 Triggering booster detection for user ${firebaseUid}...`);
+    console.log(`${logPrefix} 🔍 Step 7: Triggering async booster detection...`);
     this.boosterService.detectAndAssignBoosters(firebaseUid)
       .then(detectedBoosters => {
         if (detectedBoosters && detectedBoosters.length > 0) {
-          console.log(`✨ Boosters detected for ${firebaseUid}:`, detectedBoosters.map(b => b.name).join(', '));
+          console.log(`${logPrefix} ✨ Boosters detected: ${detectedBoosters.map(b => b.name).join(', ')}`);
         } else {
-          console.log(`📭 No boosters detected for ${firebaseUid}`);
+          console.log(`${logPrefix} 📭 No boosters detected`);
         }
       })
       .catch(err => {
-        console.error(`⚠️ Booster detection failed for ${firebaseUid}:`, err.message);
+        console.error(`${logPrefix} ⚠️ Booster detection failed: ${err.message}`);
         // Don't fail the stake operation if booster detection fails
       });
 
-    return {
+    const result = {
       success: true,
       amount,
       timestamp: new Date().toISOString(),
       txSignature,
+      operationId, // Include operation ID for tracking
     };
+    
+    console.log(`${logPrefix} 📤 Returning result:`, JSON.stringify(result));
+    return result;
   }
 
   /**
@@ -922,27 +1008,63 @@ class StakingService {
   /**
    * Helper: Verify SPL Token Transfer to Vault
    * Checks that user sent MKIN tokens to the vault
+   * 
+   * IMPORTANT: This method handles floating-point precision issues that can occur
+   * when converting between display units (MKIN) and raw units (9 decimals).
+   * We use a small tolerance (0.01%) to account for rounding differences between
+   * frontend BigInt(Math.floor(amount * 1e9)) and backend Number calculations.
    */
   async _verifyTokenTransfer(signature, expectedAmount, userWallet) {
     try {
-      console.log(
-        `🔍 Verifying token transfer: signature=${signature}, amount=${expectedAmount}, user=${userWallet}`
-      );
+      console.log(`🔍 Verifying token transfer:`);
+      console.log(`   Signature: ${signature}`);
+      console.log(`   Expected Amount: ${expectedAmount} MKIN`);
+      
+      // Use BigInt for precise raw amount calculation to avoid floating-point issues
+      // Frontend uses: BigInt(Math.floor(amount * 1e9))
+      // We need to match that behavior
+      const expectedRawAmountFloat = expectedAmount * 1e9;
+      const expectedRawAmountFloor = Math.floor(expectedRawAmountFloat);
+      
+      // Allow 0.01% tolerance for floating-point precision differences
+      // This handles cases like 464622.733129623 * 1e9 where JS floating point
+      // might produce slightly different results between frontend and backend
+      const tolerance = 0.0001; // 0.01%
+      const minAcceptableAmount = Math.floor(expectedRawAmountFloor * (1 - tolerance));
+      
+      console.log(`   Expected Raw Amount (float): ${expectedRawAmountFloat}`);
+      console.log(`   Expected Raw Amount (floor): ${expectedRawAmountFloor}`);
+      console.log(`   Min Acceptable Amount (with ${tolerance * 100}% tolerance): ${minAcceptableAmount}`);
+      console.log(`   User Wallet: ${userWallet}`);
 
       const tx = await this.connection.getParsedTransaction(signature, {
         commitment: "confirmed",
         maxSupportedTransactionVersion: 0,
       });
 
-      if (!tx || !tx.meta) {
-        console.error("❌ Transaction not found or no metadata");
+      if (!tx) {
+        console.error("❌ Transaction not found - signature may be invalid or not yet confirmed");
+        console.error(`   Signature: ${signature}`);
+        return false;
+      }
+
+      if (!tx.meta) {
+        console.error("❌ Transaction has no metadata - may still be processing");
+        console.error(`   Signature: ${signature}`);
+        console.error(`   Slot: ${tx.slot}`);
         return false;
       }
 
       if (tx.meta.err) {
-        console.error("❌ Transaction failed on-chain:", tx.meta.err);
+        console.error("❌ Transaction failed on-chain:");
+        console.error(`   Error: ${JSON.stringify(tx.meta.err)}`);
+        console.error(`   Signature: ${signature}`);
         return false;
       }
+
+      console.log(`✅ Transaction found and succeeded on-chain`);
+      console.log(`   Slot: ${tx.slot}`);
+      console.log(`   Block Time: ${tx.blockTime ? new Date(tx.blockTime * 1000).toISOString() : 'N/A'}`);
 
       // Use network configuration for token mint
       const tokenMint = this.tokenMint;
@@ -976,19 +1098,26 @@ class StakingService {
         // Check for SPL Token transfer instruction
         if (ix.program === "spl-token" && ix.parsed?.type === "transfer") {
           const info = ix.parsed.info;
+          const actualRawAmount = BigInt(info.amount);
+          const actualDisplayAmount = Number(actualRawAmount) / 1e9;
+          
           console.log(`    Transfer details:`);
           console.log(`      Source: ${info.source}`);
           console.log(`      Destination: ${info.destination}`);
           console.log(`      Amount (raw): ${info.amount}`);
+          console.log(`      Amount (display): ${actualDisplayAmount} MKIN`);
           console.log(`      Authority: ${info.authority}`);
 
-          // Verify: source = userATA, destination = vaultATA, amount >= expected
-          // Frontend sends amount * 1e9, backend receives amount in display units
-          // So we need to compare: raw_amount >= expectedAmount * 1e9
-          const expectedRawAmount = expectedAmount * 1e9;
-          const amountMatches = Number(info.amount) >= expectedRawAmount;
+          // Verify: source = userATA, destination = vaultATA, amount >= expected (with tolerance)
           const sourceMatches = info.source === userATA.toBase58();
           const destMatches = info.destination === vaultATA.toBase58();
+          
+          // Use BigInt comparison for precision, but allow for small tolerance
+          const amountMatches = Number(actualRawAmount) >= minAcceptableAmount;
+          
+          // Calculate difference for logging
+          const amountDifference = Number(actualRawAmount) - expectedRawAmountFloor;
+          const percentDifference = (amountDifference / expectedRawAmountFloor) * 100;
 
           console.log(`    Verification:`);
           console.log(
@@ -998,25 +1127,70 @@ class StakingService {
             `      Dest matches: ${destMatches} (expected: ${vaultATA.toBase58()})`
           );
           console.log(
-            `      Amount matches: ${amountMatches} (${info.amount} >= ${expectedRawAmount} [${expectedAmount} MKIN * 1e9])`
+            `      Amount matches: ${amountMatches}`
+          );
+          console.log(
+            `        Actual: ${info.amount} raw (${actualDisplayAmount} MKIN)`
+          );
+          console.log(
+            `        Expected: ${expectedRawAmountFloor} raw (${expectedAmount} MKIN)`
+          );
+          console.log(
+            `        Min Acceptable: ${minAcceptableAmount} raw`
+          );
+          console.log(
+            `        Difference: ${amountDifference} raw (${percentDifference.toFixed(6)}%)`
           );
 
           if (sourceMatches && destMatches && amountMatches) {
             console.log(
-              `✅ Valid token transfer verified: ${info.amount} raw tokens (${expectedAmount} MKIN) from ${userWallet}`
+              `✅ Valid token transfer verified: ${info.amount} raw tokens (${actualDisplayAmount} MKIN) from ${userWallet}`
             );
             return true;
+          } else {
+            // Log specific failure reasons
+            if (!sourceMatches) {
+              console.error(`❌ Source ATA mismatch: got ${info.source}, expected ${userATA.toBase58()}`);
+            }
+            if (!destMatches) {
+              console.error(`❌ Destination ATA mismatch: got ${info.destination}, expected ${vaultATA.toBase58()}`);
+            }
+            if (!amountMatches) {
+              console.error(`❌ Amount too low: got ${info.amount}, need at least ${minAcceptableAmount}`);
+              console.error(`   This could indicate:`);
+              console.error(`   - User sent less than requested amount`);
+              console.error(`   - Floating-point precision issue (difference: ${percentDifference.toFixed(6)}%)`);
+            }
           }
         }
       }
 
       console.error("❌ No valid token transfer found in transaction");
-      console.error(
-        "   Expected: user ATA -> vault ATA with sufficient amount"
-      );
+      console.error(`   Expected source ATA: ${userATA.toBase58()}`);
+      console.error(`   Expected destination ATA: ${vaultATA.toBase58()}`);
+      console.error(`   Expected amount: ${expectedAmount} MKIN (${expectedRawAmountFloor} raw)`);
+      console.error(`   Min acceptable: ${minAcceptableAmount} raw`);
+      console.error(`   Total instructions checked: ${instructions.length}`);
+      
+      // Log all token-related instructions for debugging
+      const tokenInstructions = instructions.filter(ix => ix.program === 'spl-token');
+      if (tokenInstructions.length > 0) {
+        console.error(`   Token instructions found but didn't match:`);
+        tokenInstructions.forEach((ix, idx) => {
+          console.error(`     [${idx}] Type: ${ix.parsed?.type}, Info: ${JSON.stringify(ix.parsed?.info)}`);
+        });
+      } else {
+        console.error(`   No spl-token instructions found in transaction`);
+      }
+      
       return false;
     } catch (e) {
-      console.error("❌ Token transfer verification error:", e);
+      console.error("❌ Token transfer verification error:");
+      console.error(`   Error message: ${e.message}`);
+      console.error(`   Error stack: ${e.stack}`);
+      console.error(`   Signature: ${signature}`);
+      console.error(`   Expected amount: ${expectedAmount} MKIN`);
+      console.error(`   User wallet: ${userWallet}`);
       return false;
     }
   }

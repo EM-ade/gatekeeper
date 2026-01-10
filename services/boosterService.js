@@ -41,7 +41,8 @@ class BoosterService {
           // New Random 1/1 boosters added 2026-01-09
           "LWVzjTiSKBZDWvWP4RmsXffqctmDH7GeZjchupwd1HF",
           "EXA4nEohnyY9XTeAzNsV3f9GXcYUh8cCpWV9qbjf1egS",
-          "HchoYoGU9ZnVffHaEo1Aw9xitvqyhiP575GpebiSXNK4"
+          "HchoYoGU9ZnVffHaEo1Aw9xitvqyhiP575GpebiSXNK4",
+          "5MbExwqPUNL8yNuUb8JK9iCXHGGcLXEDkecgZDfSEJfu"
         ]
       },
       CUSTOM_1_1: {
@@ -125,15 +126,46 @@ class BoosterService {
       
       // Get all NFTs from wallet
       const allNFTs = await this.nftVerification.getNFTsByOwner(walletAddress);
-      const walletMints = allNFTs.map(nft => nft.id?.toLowerCase());
+      
+      // Debug: Log NFT structure to understand the data
+      console.log(`📦 Found ${allNFTs.length} total NFTs in wallet`);
+      if (allNFTs.length > 0) {
+        console.log(`📋 Sample NFT structure (first NFT):`, JSON.stringify({
+          id: allNFTs[0].id,
+          mint: allNFTs[0].mint,
+          content: allNFTs[0].content?.metadata?.name
+        }, null, 2));
+      }
+      
+      // Extract mint addresses - try both 'id' and 'mint' fields
+      const walletMints = allNFTs.map(nft => {
+        const mintAddress = nft.id || nft.mint;
+        return mintAddress?.toLowerCase();
+      }).filter(Boolean);
+      
+      console.log(`🔑 Extracted ${walletMints.length} mint addresses from wallet`);
+      
+      // Debug: Log all booster mints we're looking for
+      const allBoosterMints = Object.values(this.NFT_CATEGORIES).flatMap(cat => cat.mints.map(m => m.toLowerCase()));
+      console.log(`🎯 Looking for ${allBoosterMints.length} booster NFT mints across all categories`);
+      
+      // Debug: Check for any matches
+      const anyMatches = walletMints.filter(mint => allBoosterMints.includes(mint));
+      console.log(`🔍 Potential matches found: ${anyMatches.length}`);
+      if (anyMatches.length > 0) {
+        console.log(`   Matching mints:`, anyMatches);
+      }
       
       const detectedBoosters = [];
       
       // Check each category
       for (const [categoryKey, category] of Object.entries(this.NFT_CATEGORIES)) {
+        const categoryMintsLower = category.mints.map(m => m.toLowerCase());
         const matchingMints = category.mints.filter(mint => 
           walletMints.includes(mint.toLowerCase())
         );
+        
+        console.log(`   Checking ${category.name}: ${matchingMints.length}/${category.mints.length} matches`);
         
         if (matchingMints.length > 0) {
           detectedBoosters.push({
@@ -148,6 +180,8 @@ class BoosterService {
           console.log(`✅ Detected ${category.name} booster (${matchingMints.length} NFTs):`, matchingMints);
         }
       }
+      
+      console.log(`📊 Total boosters detected: ${detectedBoosters.length}`);
       
       return detectedBoosters;
     } catch (error) {
@@ -248,31 +282,40 @@ class BoosterService {
    * Returns detected boosters even if database update fails
    */
   async detectAndAssignBoosters(firebaseUid) {
+    console.log(`\n${"=".repeat(60)}`);
+    console.log(`🎯 BOOSTER DETECTION STARTED for user: ${firebaseUid}`);
+    console.log(`${"=".repeat(60)}`);
+    
     try {
       // Check cache first
       const cacheKey = `boosters_${firebaseUid}`;
       const cached = this.cache.get(cacheKey);
       
       if (cached && (Date.now() - cached.timestamp) < this.CACHE_TTL) {
-        console.log(`📦 Using cached boosters for ${firebaseUid}`);
+        console.log(`📦 Using cached boosters for ${firebaseUid} (${cached.boosters.length} boosters)`);
         return cached.boosters;
       }
+      console.log(`📦 No valid cache found, scanning wallet...`);
       
       // Get user's wallet address
+      console.log(`👤 Fetching wallet address for user ${firebaseUid}...`);
       const walletAddress = await this.getUserWalletAddress(firebaseUid);
       if (!walletAddress) {
-        console.log(`No wallet address found for ${firebaseUid}`);
+        console.log(`❌ No wallet address found for ${firebaseUid}`);
         return [];
       }
+      console.log(`✅ Wallet address: ${walletAddress}`);
       
       // Scan wallet for eligible NFTs
       const detectedBoosters = await this.scanWalletForBoosters(walletAddress);
       
       // Try to update user's staking position, but return boosters anyway
       try {
+        console.log(`💾 Saving ${detectedBoosters.length} boosters to database...`);
         await this.updateUserBoosters(firebaseUid, detectedBoosters);
+        console.log(`✅ Boosters saved to database`);
       } catch (updateError) {
-        console.warn(`Failed to update database with boosters for ${firebaseUid}, but will still return detected boosters:`, updateError);
+        console.warn(`⚠️ Failed to update database with boosters for ${firebaseUid}:`, updateError.message);
       }
       
       // Cache result
@@ -281,9 +324,13 @@ class BoosterService {
         timestamp: Date.now()
       });
       
+      console.log(`🎯 BOOSTER DETECTION COMPLETE: ${detectedBoosters.length} boosters found`);
+      console.log(`${"=".repeat(60)}\n`);
+      
       return detectedBoosters;
     } catch (error) {
-      console.error(`Error detecting boosters for ${firebaseUid}:`, error);
+      console.error(`❌ Error detecting boosters for ${firebaseUid}:`, error);
+      console.error(`   Stack:`, error.stack);
       // Return empty array instead of throwing to allow staking page to load
       return [];
     }
