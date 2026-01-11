@@ -78,7 +78,8 @@ class BoosterService {
           // Solana Miner boosters added 2026-01-10 to 2026-01-11
           "J2F9etQhMYNkwPAWctbJBwr3z4rMpYprdcqAKuNR4h4q",
           "5DD4yFFycyGhXgnqAh58HQ659uRjvr5KBTBbTcBTkhf5",
-          "7pKZgMEVo1jnndSUCcDpY2Hpa3SapveooAmMPL2HCTWV"
+          "7pKZgMEVo1jnndSUCcDpY2Hpa3SapveooAmMPL2HCTWV",
+          "BGtMZEb36SLHB3WceU61AwfdXbxy7k6vqXciWtvxSJsQ"
         ]
       }
     };
