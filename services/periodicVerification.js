@@ -174,7 +174,20 @@ class PeriodicVerificationService {
     // Update Discord roles
     try {
       const guild = await this.client.guilds.fetch(guild_id);
-      const member = await guild.members.fetch(discord_id);
+      
+      // Try to fetch the member - if they left the server, skip role updates
+      let member;
+      try {
+        member = await guild.members.fetch(discord_id);
+      } catch (fetchError) {
+        // Member not found - they likely left the server
+        if (fetchError.code === 10007 || fetchError.message.includes('Unknown Member')) {
+          console.log(`[periodic-verification] User ${username || discord_id} no longer in server, skipping role update`);
+          return;
+        }
+        // Other error - rethrow
+        throw fetchError;
+      }
 
       // Handle regular contract rules with mutually exclusive quantity tiers per collection
       const quantitySummaries = contractSummaries.filter(c => c.ruleType === 'quantity');
