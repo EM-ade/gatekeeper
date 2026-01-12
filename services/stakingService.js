@@ -694,8 +694,33 @@ class StakingService {
 
       console.log(`${logPrefix} 🚀 Starting claim operation for user ${firebaseUid}`);
 
-    // 1. Check for duplicate claim transaction FIRST (before any processing)
-    console.log(`🔍 Step 1: Checking for duplicate claim transaction...`);
+    // 1. Check if user has rewards to claim FIRST (before taking any fee!)
+    console.log(`${logPrefix} 🔍 Step 1: Checking if user has rewards to claim...`);
+    const posRef = this.db.collection(POSITIONS_COLLECTION).doc(firebaseUid);
+    const posDoc = await posRef.get();
+    if (!posDoc.exists) {
+      throw new StakingError("No staking position found. Please stake tokens first.");
+    }
+    
+    const posData = posDoc.data();
+    
+    // Get user's booster multiplier for accurate calculation
+    let boosterMultiplier = posData.booster_multiplier || 1.0;
+    
+    // Calculate pending rewards in REAL-TIME (matches frontend calculation)
+    const pendingRewards = this._calculatePendingRewards(posData, boosterMultiplier);
+    
+    if (pendingRewards <= 0) {
+      console.error(`${logPrefix} ❌ User has no rewards to claim`);
+      throw new StakingError(
+        "You have no rewards to claim yet. Rewards accrue over time based on your staked amount."
+      );
+    }
+    
+    console.log(`${logPrefix} ✅ User has ${pendingRewards.toFixed(6)} SOL to claim`);
+
+    // 2. Check for duplicate claim transaction
+    console.log(`${logPrefix} 🔍 Step 2: Checking for duplicate claim transaction...`);
     const existingTx = await this.db
       .collection(TRANSACTIONS_COLLECTION)
       .where("fee_tx", "==", txSignature)
@@ -710,9 +735,10 @@ class StakingService {
       console.error(`   - User: ${firebaseUid}`);
       throw new StakingError("Claim transaction already processed");
     }
-    console.log(`✅ No duplicate claim found`);
+    console.log(`${logPrefix} ✅ No duplicate claim found`);
 
-    // 2. Calculate dynamic fee based on current SOL price
+    // 3. Calculate dynamic fee based on current SOL price
+    console.log(`${logPrefix} 🔍 Step 3: Calculating claim fee...`);
     const { getFeeInSol } = await import("../utils/solPrice.js");
     const {
       solAmount: feeAmount,
@@ -721,48 +747,45 @@ class StakingService {
     } = await getFeeInSol(2.0); // $2 USD
 
     console.log(
-      `💵 Claim fee: $${usdAmount} = ${feeAmount.toFixed(
+      `${logPrefix} 💵 Claim fee: $${usdAmount} = ${feeAmount.toFixed(
         4
       )} SOL (SOL price: $${solPrice})`
     );
 
-    // 3. Verify SOL Fee payment (with 1% tolerance)
+    // 4. Verify SOL Fee payment (with 1% tolerance)
+    console.log(`${logPrefix} 🔍 Step 4: Verifying fee transaction...`);
+    console.log(`   Transaction: ${txSignature}`);
     const tolerance = 0.01;
     const minFee = feeAmount * (1 - tolerance);
     const maxFee = feeAmount * (1 + tolerance);
+    console.log(`   Expected fee: ${minFee.toFixed(4)} - ${maxFee.toFixed(4)} SOL ($${usdAmount})`);
+    
     const isValidFee = await this._verifySolTransfer(
       txSignature,
       minFee,
       maxFee
     );
-    if (!isValidFee) throw new StakingError("Invalid Fee Transaction");
-
-    // 4. Get user's position to calculate reward amount for balance check
-    console.log(`🔍 Step 4: Checking user's pending rewards...`);
-    const posRef = this.db.collection(POSITIONS_COLLECTION).doc(firebaseUid);
-    const posDoc = await posRef.get();
-    if (!posDoc.exists) throw new StakingError("No staking position found");
     
-    const posData = posDoc.data();
-    const pendingRewards = posData.pending_rewards || 0;
-    
-    if (pendingRewards <= 0) {
-      throw new StakingError("No rewards to claim. Do not pay the fee.");
+    if (!isValidFee) {
+      console.error(`❌ Fee verification failed for transaction: ${txSignature}`);
+      console.error(`   Check the detailed logs above for the exact reason`);
+      throw new StakingError(
+        "Invalid fee transaction. Please ensure you sent the correct amount to the correct address."
+      );
     }
-    
-    console.log(`   Pending rewards: ${pendingRewards.toFixed(9)} SOL`);
+    console.log(`${logPrefix} ✅ Fee transaction verified`);
 
-    // 5. Check treasury SOL balance BEFORE processing claim
-    console.log(`🔍 Step 5: Checking treasury SOL balance...`);
+    // 5. Check treasury SOL balance BEFORE processing claim (using real-time calculated rewards)
+    console.log(`${logPrefix} 🔍 Step 5: Checking treasury SOL balance...`);
     const treasuryKeypair = Keypair.fromSecretKey(
       bs58.decode(process.env.STAKING_PRIVATE_KEY)
     );
     const treasuryBalance = await this.connection.getBalance(treasuryKeypair.publicKey);
     const treasuryBalanceSol = treasuryBalance / 1e9;
 
-    console.log(`💰 Treasury balance: ${treasuryBalanceSol.toFixed(6)} SOL`);
-    console.log(`💰 Need to send: ${pendingRewards.toFixed(6)} SOL`);
-    console.log(`💰 Gas fee estimate: ~0.000005 SOL`);
+    console.log(`${logPrefix} 💰 Treasury balance: ${treasuryBalanceSol.toFixed(6)} SOL`);
+    console.log(`${logPrefix} 💰 Will send: ${pendingRewards.toFixed(6)} SOL (real-time calculated)`);
+    console.log(`${logPrefix} 💰 Gas fee estimate: ~0.000005 SOL`);
 
     const minRequiredSol = pendingRewards + 0.00001; // reward + gas buffer
     if (treasuryBalanceSol < minRequiredSol) {
@@ -774,10 +797,10 @@ class StakingService {
         `Service temporarily unavailable. Please try again later or contact support.`
       );
     }
-    console.log(`✅ Treasury has sufficient SOL (${treasuryBalanceSol.toFixed(6)} SOL)`);
+    console.log(`${logPrefix} ✅ Treasury has sufficient SOL (${treasuryBalanceSol.toFixed(6)} SOL)`);
 
     // 6. Pre-fetch price data BEFORE the transaction (critical fix!)
-    console.log(`📊 Step 6: Pre-fetching price data before Firestore transaction...`);
+    console.log(`${logPrefix} 📊 Step 6: Pre-fetching price data before Firestore transaction...`);
     const { getMkinPriceSOL } = await import("../utils/mkinPrice.js");
     const tokenPriceSol = await getMkinPriceSOL();
     const now = admin.firestore.Timestamp.now();
@@ -1440,6 +1463,59 @@ class StakingService {
       console.error("Fee verification error:", e);
       return false;
     }
+  }
+
+  /**
+   * Calculate pending rewards for a user in real-time
+   * This matches the frontend calculation to avoid mismatches
+   * @param {Object} positionData - User's staking position from Firebase
+   * @param {number} boosterMultiplier - Combined booster multiplier (default 1.0)
+   * @returns {number} - Pending rewards in SOL
+   */
+  _calculatePendingRewards(positionData, boosterMultiplier = 1.0) {
+    const principalAmount = positionData.principal_amount || 0;
+    
+    if (principalAmount <= 0) {
+      return 0;
+    }
+    
+    // Get stake start time (in seconds)
+    const stakeStartTime = positionData.stake_start_time?._seconds || 
+                           positionData.stake_start_time?.seconds || 
+                           Math.floor(Date.now() / 1000);
+    
+    // Calculate time staked (in seconds)
+    const currentTime = Math.floor(Date.now() / 1000);
+    const secondsStaked = currentTime - stakeStartTime;
+    
+    if (secondsStaked <= 0) {
+      return 0;
+    }
+    
+    // Annual return rate (30% APY)
+    const ANNUAL_RATE = 0.30;
+    const SECONDS_PER_YEAR = 365.25 * 24 * 60 * 60; // ~31,557,600
+    
+    // Calculate base rewards: (principal * 30% * time_staked) / year
+    const baseRewards = (principalAmount * ANNUAL_RATE * secondsStaked) / SECONDS_PER_YEAR;
+    
+    // Apply booster multiplier
+    const totalRewards = baseRewards * boosterMultiplier;
+    
+    // Subtract already claimed rewards
+    const totalClaimedSol = positionData.total_claimed_sol || 0;
+    const pendingRewards = Math.max(0, totalRewards - totalClaimedSol);
+    
+    console.log(`📊 Reward Calculation:`);
+    console.log(`   Principal: ${principalAmount} MKIN`);
+    console.log(`   Seconds staked: ${secondsStaked} (${(secondsStaked / 86400).toFixed(2)} days)`);
+    console.log(`   Base rewards: ${baseRewards.toFixed(9)} SOL`);
+    console.log(`   Booster: ${boosterMultiplier}x`);
+    console.log(`   Total rewards: ${totalRewards.toFixed(9)} SOL`);
+    console.log(`   Already claimed: ${totalClaimedSol.toFixed(9)} SOL`);
+    console.log(`   Pending: ${pendingRewards.toFixed(9)} SOL`);
+    
+    return pendingRewards;
   }
 
   /**
