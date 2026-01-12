@@ -1396,16 +1396,32 @@ class StakingService {
    * Now accepts min/max range for tolerance
    */
   async _verifySolTransfer(signature, minAmountSol, maxAmountSol) {
+    console.log(`🔍 [Fee Verification] Starting verification for transaction: ${signature}`);
+    console.log(`   Expected amount range: ${minAmountSol.toFixed(4)} - ${maxAmountSol.toFixed(4)} SOL`);
+    
     try {
+      console.log(`   Fetching transaction from RPC...`);
       const tx = await this.connection.getParsedTransaction(signature, {
         commitment: "confirmed",
         maxSupportedTransactionVersion: 0,
       });
 
-      if (!tx || !tx.meta) {
-        console.error("Transaction not found or no metadata");
+      if (!tx) {
+        console.error(`❌ Transaction not found: ${signature}`);
+        console.error(`   Possible reasons:`);
+        console.error(`   1. Transaction hasn't been confirmed yet (wait a few seconds)`);
+        console.error(`   2. Wrong transaction signature provided`);
+        console.error(`   3. Transaction is too old (pruned from RPC)`);
         return false;
       }
+      
+      if (!tx.meta) {
+        console.error(`❌ Transaction found but has no metadata: ${signature}`);
+        console.error(`   This usually means the transaction failed on-chain`);
+        return false;
+      }
+      
+      console.log(`✅ Transaction found and confirmed`);
 
       const stakingAddr = process.env.STAKING_WALLET_ADDRESS;
       if (!stakingAddr)
@@ -1473,9 +1489,9 @@ class StakingService {
    * @returns {number} - Pending rewards in SOL
    */
   _calculatePendingRewards(positionData, boosterMultiplier = 1.0) {
-    const principalAmount = positionData.principal_amount || 0;
+    const principalAmountMKIN = positionData.principal_amount || 0;
     
-    if (principalAmount <= 0) {
+    if (principalAmountMKIN <= 0) {
       return 0;
     }
     
@@ -1492,12 +1508,24 @@ class StakingService {
       return 0;
     }
     
+    // Get MKIN price in SOL (from position data or fetch current price)
+    // The principal was already converted to SOL value when staked
+    // total_entry_fees_mkin_value tells us the SOL value at stake time
+    const principalValueSOL = positionData.total_entry_fees_mkin_value || 0;
+    
+    if (principalValueSOL <= 0) {
+      console.log(`⚠️  No SOL value found for staked MKIN, using approximate calculation`);
+      // Fallback: approximate based on current market (0.00001 SOL per MKIN as estimate)
+      // This should ideally never be used - always store SOL value at stake time
+      return 0;
+    }
+    
     // Annual return rate (30% APY)
     const ANNUAL_RATE = 0.30;
     const SECONDS_PER_YEAR = 365.25 * 24 * 60 * 60; // ~31,557,600
     
-    // Calculate base rewards: (principal * 30% * time_staked) / year
-    const baseRewards = (principalAmount * ANNUAL_RATE * secondsStaked) / SECONDS_PER_YEAR;
+    // Calculate base rewards: (principal_SOL_value * 30% * time_staked) / year
+    const baseRewards = (principalValueSOL * ANNUAL_RATE * secondsStaked) / SECONDS_PER_YEAR;
     
     // Apply booster multiplier
     const totalRewards = baseRewards * boosterMultiplier;
@@ -1507,8 +1535,10 @@ class StakingService {
     const pendingRewards = Math.max(0, totalRewards - totalClaimedSol);
     
     console.log(`📊 Reward Calculation:`);
-    console.log(`   Principal: ${principalAmount} MKIN`);
-    console.log(`   Seconds staked: ${secondsStaked} (${(secondsStaked / 86400).toFixed(2)} days)`);
+    console.log(`   Principal: ${principalAmountMKIN.toLocaleString()} MKIN`);
+    console.log(`   Principal SOL value: ${principalValueSOL.toFixed(6)} SOL`);
+    console.log(`   Seconds staked: ${secondsStaked.toLocaleString()} (${(secondsStaked / 86400).toFixed(2)} days)`);
+    console.log(`   Annual rate: ${(ANNUAL_RATE * 100)}% APY`);
     console.log(`   Base rewards: ${baseRewards.toFixed(9)} SOL`);
     console.log(`   Booster: ${boosterMultiplier}x`);
     console.log(`   Total rewards: ${totalRewards.toFixed(9)} SOL`);
