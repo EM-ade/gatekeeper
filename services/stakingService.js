@@ -683,10 +683,16 @@ class StakingService {
    * Claims pending rewards. Requires $2 USD fee (~0.02 SOL, dynamic).
    */
   async claim(firebaseUid, txSignature) {
-    if (!txSignature)
-      throw new StakingError("Transaction signature required for fee");
+    const operationId = `CLAIM-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const logPrefix = `[${operationId}]`;
+    
+    try {
+      if (!txSignature) {
+        console.error(`${logPrefix} ❌ Missing transaction signature`);
+        throw new StakingError("Transaction signature required for fee");
+      }
 
-    console.log(`🚀 Starting claim operation for user ${firebaseUid}`);
+      console.log(`${logPrefix} 🚀 Starting claim operation for user ${firebaseUid}`);
 
     // 1. Check for duplicate claim transaction FIRST (before any processing)
     console.log(`🔍 Step 1: Checking for duplicate claim transaction...`);
@@ -883,15 +889,25 @@ class StakingService {
       throw new StakingError("Payout failed. Please contact support.");
     }
 
-    console.log(`🎉 Claim operation completed successfully for user ${firebaseUid}`);
+      console.log(`${logPrefix} 🎉 Claim operation completed successfully for user ${firebaseUid}`);
 
-    return {
-      success: true,
-      amount: rewardAmount,
-      payoutSignature,
-      feeSignature: txSignature,
-      timestamp: new Date().toISOString(),
-    };
+      return {
+        success: true,
+        amount: rewardAmount,
+        payoutSignature,
+        feeSignature: txSignature,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error(`${logPrefix} ❌ CLAIM OPERATION FAILED!`);
+      console.error(`${logPrefix}   - User: ${firebaseUid}`);
+      console.error(`${logPrefix}   - Error type: ${error.name}`);
+      console.error(`${logPrefix}   - Error message: ${error.message}`);
+      console.error(`${logPrefix}   - Stack trace:`, error.stack);
+      
+      // Re-throw the error so it gets sent to the client
+      throw error;
+    }
   }
 
   /**
