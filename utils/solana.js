@@ -463,16 +463,20 @@ export const checkNftOwnershipWithClass = async (walletAddress, collectionConfig
             const fetchedNfts = await getNftsFromCollectionByWallet(walletAddress, symbol);
             
             if (fetchedNfts && fetchedNfts.length > 0) {
-                // Magic Eden API filters by collectionSymbol in the request, so all returned NFTs
-                // are already from the correct collection. No need to filter again.
-                // The collectionAddress field is not reliably present in Magic Eden responses.
-                console.log(`Magic Eden: Found ${fetchedNfts.length} NFTs for collection ${symbol}`);
-                
-                magicEdenNfts.push(...fetchedNfts);
-                fetchedNfts.forEach(nft => {
-                    seenMints.add((nft.mintAddress || nft.tokenMint || nft.id)?.toLowerCase());
+                // Verify these are actually from the correct collection by checking collection address
+                const collectionNfts = fetchedNfts.filter(nft => {
+                    // Check if NFT's collection matches our configured address
+                    const nftCollectionAddress = nft.collectionAddress || nft.collection?.address;
+                    return nftCollectionAddress?.toLowerCase() === collectionConfig.address?.toLowerCase();
                 });
-                break; // Found NFTs from this symbol, use them
+                
+                if (collectionNfts.length > 0) {
+                    magicEdenNfts.push(...collectionNfts);
+                    collectionNfts.forEach(nft => {
+                        seenMints.add((nft.mintAddress || nft.tokenMint || nft.id)?.toLowerCase());
+                    });
+                    break; // Found NFTs from this symbol, use them
+                }
             }
         }
         
