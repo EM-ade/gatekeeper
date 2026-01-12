@@ -949,15 +949,48 @@ class StakingService {
 
     console.log(`🚀 Starting unstake operation for user ${firebaseUid}: ${amount} MKIN`);
 
-    // Get user's wallet address
+    // 1. Check for duplicate unstake transaction FIRST (before any processing)
+    console.log(`🔍 Step 1: Checking for duplicate unstake transaction...`);
+    const existingTx = await this.db
+      .collection(TRANSACTIONS_COLLECTION)
+      .where("signature", "==", txSignature)
+      .where("type", "==", "UNSTAKE")
+      .limit(1)
+      .get();
+
+    if (!existingTx.empty) {
+      console.error(`❌ DUPLICATE UNSTAKE DETECTED!`);
+      console.error(`   - Transaction signature: ${txSignature}`);
+      console.error(`   - Existing doc ID: ${existingTx.docs[0].id}`);
+      console.error(`   - User: ${firebaseUid}`);
+      throw new StakingError("Unstake transaction already processed");
+    }
+    console.log(`✅ No duplicate unstake found`);
+
+    // 2. Get user's wallet address
     const userRewardDoc = await this.db
       .collection(USER_REWARDS_COLLECTION)
       .doc(firebaseUid)
       .get();
     if (!userRewardDoc.exists) throw new StakingError("User not found");
 
-    const userWallet = userRewardDoc.data().walletAddress;
-    if (!userWallet) throw new StakingError("User wallet address not found");
+    let userWallet = userRewardDoc.data().walletAddress;
+    
+    // Fallback: if walletAddress not in userRewards, check users collection
+    if (!userWallet) {
+      console.log(`⚠️  walletAddress not in userRewards, checking users collection...`);
+      const userDoc = await this.db.collection('users').doc(firebaseUid).get();
+      if (userDoc.exists) {
+        userWallet = userDoc.data().walletAddress;
+        if (userWallet) {
+          console.log(`✅ Found walletAddress in users collection: ${userWallet}`);
+        }
+      }
+    }
+    
+    if (!userWallet) {
+      throw new StakingError("User wallet address not found in userRewards or users collection");
+    }
 
     // 1. Calculate dynamic fee based on current SOL price
     const { getFeeInSol } = await import("../utils/solPrice.js");
@@ -973,16 +1006,24 @@ class StakingService {
       )} SOL (SOL price: $${solPrice})`
     );
 
-    // 2. Verify SOL Fee payment (with 1% tolerance)
-    const tolerance = 0.01;
+    // 2. Verify SOL Fee payment (with 20% tolerance for price volatility - matches claim)
+    const tolerance = 0.20; // 20% tolerance to handle SOL price fluctuations
     const minFee = feeAmount * (1 - tolerance);
     const maxFee = feeAmount * (1 + tolerance);
+    console.log(`   Expected fee: ~${feeAmount.toFixed(4)} SOL ($${usdAmount})`);
+    console.log(`   Acceptable range: ${minFee.toFixed(4)} - ${maxFee.toFixed(4)} SOL (±20%)`);
+    
     const isValidFee = await this._verifySolTransfer(
       txSignature,
       minFee,
       maxFee
     );
-    if (!isValidFee) throw new StakingError("Invalid Fee Transaction");
+    if (!isValidFee) {
+      throw new StakingError(
+        "Unable to verify your fee payment. Please wait a moment and try again. If the issue persists, contact support."
+      );
+    }
+    console.log(`✅ Fee transaction verified`);
 
     // 3. Check vault MKIN balance BEFORE accepting fee
     console.log(`🔍 Step 3: Checking vault MKIN balance...`);
@@ -1087,6 +1128,15 @@ class StakingService {
         // 3. Update Principal
         const previousPrincipal = posData.principal_amount;
         posData.principal_amount -= amount;
+
+        // 3.5. Proportionally reduce entry fees when unstaking (for accurate future reward calculations)
+        if (posData.total_entry_fees_sol && previousPrincipal > 0) {
+          const unstakeRatio = amount / previousPrincipal;
+          const oldEntryFees = posData.total_entry_fees_sol || 0;
+          const feesToDeduct = oldEntryFees * unstakeRatio;
+          posData.total_entry_fees_sol = Math.max(0, oldEntryFees - feesToDeduct);
+          console.log(`   Proportionally reduced entry fees: ${oldEntryFees.toFixed(6)} → ${posData.total_entry_fees_sol.toFixed(6)} SOL (${(unstakeRatio * 100).toFixed(2)}% unstaked)`);
+        }
 
         // 4. Update Pool Total
         poolData.total_staked = (poolData.total_staked || 0) - amount;
@@ -1596,8 +1646,21 @@ class StakingService {
         .get();
       if (!rewardDoc.exists) throw new Error("User wallet not found");
 
-      const userWalletAddr = rewardDoc.data().walletAddress;
-      if (!userWalletAddr) throw new Error("User has no wallet address linked");
+      let userWalletAddr = rewardDoc.data().walletAddress;
+      
+      // Fallback: if walletAddress not in userRewards, check users collection
+      if (!userWalletAddr) {
+        console.log(`⚠️  walletAddress not in userRewards, checking users collection for claim payout...`);
+        const userDoc = await this.db.collection('users').doc(firebaseUid).get();
+        if (userDoc.exists) {
+          userWalletAddr = userDoc.data().walletAddress;
+          if (userWalletAddr) {
+            console.log(`✅ Found walletAddress in users collection: ${userWalletAddr}`);
+          }
+        }
+      }
+      
+      if (!userWalletAddr) throw new Error("User has no wallet address linked in userRewards or users collection");
 
       // Create keypair from private key
       const vaultKeypair = Keypair.fromSecretKey(bs58.decode(stakingKey));
