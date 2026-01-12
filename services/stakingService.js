@@ -752,13 +752,19 @@ class StakingService {
       )} SOL (SOL price: $${solPrice})`
     );
 
-    // 4. Verify SOL Fee payment (with 1% tolerance)
+    // 4. Verify SOL Fee payment (USD-based validation for future-proofing)
     console.log(`${logPrefix} 🔍 Step 4: Verifying fee transaction...`);
     console.log(`   Transaction: ${txSignature}`);
-    const tolerance = 0.01;
-    const minFee = feeAmount * (1 - tolerance);
-    const maxFee = feeAmount * (1 + tolerance);
-    console.log(`   Expected fee: ${minFee.toFixed(4)} - ${maxFee.toFixed(4)} SOL ($${usdAmount})`);
+    
+    // Accept any transaction within ±20% of the expected SOL amount
+    // This handles large SOL price swings while still validating destination
+    const tolerancePercent = 0.20; // 20% tolerance
+    const minFee = feeAmount * (1 - tolerancePercent);
+    const maxFee = feeAmount * (1 + tolerancePercent);
+    
+    console.log(`   Expected fee: ~${feeAmount.toFixed(4)} SOL ($${usdAmount})`);
+    console.log(`   Acceptable range: ${minFee.toFixed(4)} - ${maxFee.toFixed(4)} SOL (±20%)`);
+    console.log(`   Note: We verify destination address and reasonable amount, not exact SOL`);
     
     const isValidFee = await this._verifySolTransfer(
       txSignature,
@@ -770,7 +776,7 @@ class StakingService {
       console.error(`❌ Fee verification failed for transaction: ${txSignature}`);
       console.error(`   Check the detailed logs above for the exact reason`);
       throw new StakingError(
-        "Invalid fee transaction. Please ensure you sent the correct amount to the correct address."
+        "Unable to verify your fee payment. Please wait a moment and try again. If the issue persists, contact support."
       );
     }
     console.log(`${logPrefix} ✅ Fee transaction verified`);
@@ -1395,33 +1401,54 @@ class StakingService {
    * Helper: Verify SOL transfer (for fee payments)
    * Now accepts min/max range for tolerance
    */
-  async _verifySolTransfer(signature, minAmountSol, maxAmountSol) {
+  async _verifySolTransfer(signature, minAmountSol, maxAmountSol, retryCount = 0) {
+    const maxRetries = 3;
     console.log(`🔍 [Fee Verification] Starting verification for transaction: ${signature}`);
     console.log(`   Expected amount range: ${minAmountSol.toFixed(4)} - ${maxAmountSol.toFixed(4)} SOL`);
     
     try {
-      console.log(`   Fetching transaction from RPC...`);
-      const tx = await this.connection.getParsedTransaction(signature, {
+      console.log(`   Fetching transaction from RPC (attempt ${retryCount + 1}/${maxRetries + 1})...`);
+      
+      // Try multiple commitment levels for better reliability
+      let tx = await this.connection.getParsedTransaction(signature, {
         commitment: "confirmed",
         maxSupportedTransactionVersion: 0,
       });
+      
+      // If not found with "confirmed", try "finalized"
+      if (!tx && retryCount === 0) {
+        console.log(`   Not found with "confirmed", trying "finalized"...`);
+        tx = await this.connection.getParsedTransaction(signature, {
+          commitment: "finalized",
+          maxSupportedTransactionVersion: 0,
+        });
+      }
 
       if (!tx) {
-        console.error(`❌ Transaction not found: ${signature}`);
+        // If transaction not found and we have retries left, wait and retry
+        if (retryCount < maxRetries) {
+          const delay = 2000 * (retryCount + 1); // 2s, 4s, 6s
+          console.log(`   Transaction not found yet, waiting ${delay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return this._verifySolTransfer(signature, minAmountSol, maxAmountSol, retryCount + 1);
+        }
+        
+        console.error(`❌ Transaction not found after ${maxRetries + 1} attempts: ${signature}`);
         console.error(`   Possible reasons:`);
-        console.error(`   1. Transaction hasn't been confirmed yet (wait a few seconds)`);
-        console.error(`   2. Wrong transaction signature provided`);
-        console.error(`   3. Transaction is too old (pruned from RPC)`);
+        console.error(`   1. Wrong transaction signature provided`);
+        console.error(`   2. Transaction is too old (pruned from RPC)`);
+        console.error(`   3. RPC node issues (try again in a moment)`);
         return false;
       }
       
       if (!tx.meta) {
         console.error(`❌ Transaction found but has no metadata: ${signature}`);
         console.error(`   This usually means the transaction failed on-chain`);
+        console.error(`   Check transaction on Solscan: https://solscan.io/tx/${signature}`);
         return false;
       }
       
-      console.log(`✅ Transaction found and confirmed`);
+      console.log(`✅ Transaction found and confirmed (slot: ${tx.slot})`);
 
       const stakingAddr = process.env.STAKING_WALLET_ADDRESS;
       if (!stakingAddr)
