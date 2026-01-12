@@ -332,7 +332,9 @@ class MagicEdenRateLimiter {
                         });
                         item.resolve(results[index]);
                     } else {
-                        item.reject(new Error(`Failed to fetch metadata for ${item.mintAddress}`));
+                        // Return null instead of rejecting to allow verification to continue
+                        console.log(`Magic Eden: No metadata for ${item.mintAddress.slice(0, 8)}..., returning null`);
+                        item.resolve(null);
                     }
                 });
 
@@ -348,7 +350,7 @@ class MagicEdenRateLimiter {
     }
 
     async fetchSingleNftMetadata(mintAddress, retryCount = 0) {
-        const maxRetries = 3;
+        const maxRetries = 5;
         const url = `https://api-mainnet.magiceden.dev/v2/tokens/${mintAddress}`;
         const options = {
             method: 'GET',
@@ -361,20 +363,28 @@ class MagicEdenRateLimiter {
                 if (response.status === 429 || response.status === 503) {
                     // Rate limited or service unavailable
                     if (retryCount < maxRetries) {
-                        const delay = Math.min(this.retryDelay * Math.pow(2, retryCount), 30000); // Exponential backoff, max 30s
-                        console.log(`Magic Eden: Rate limited for ${mintAddress}, retrying in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+                        // Exponential backoff: 5s, 10s, 20s, 40s, 60s
+                        const baseDelay = this.retryDelay * Math.pow(2, retryCount);
+                        const delay = Math.min(baseDelay, 60000); // Max 60s
+                        console.log(`Magic Eden: Rate limited for metadata, waiting ${delay/1000}s (attempt ${retryCount + 1}/${maxRetries})`);
                         await new Promise(resolve => setTimeout(resolve, delay));
                         return this.fetchSingleNftMetadata(mintAddress, retryCount + 1); // Retry
                     }
-                    // Max retries reached - return null instead of throwing
-                    console.log(`Magic Eden: Failed to fetch metadata for ${mintAddress} after ${maxRetries} retries`);
+                    // Max retries reached - return null to allow verification to continue
+                    console.log(`Magic Eden: Metadata fetch failed after ${maxRetries} retries, continuing without metadata`);
                     return null;
                 }
                 throw new Error(`Magic Eden API error: ${response.statusText}`);
             }
             return await response.json();
         } catch (error) {
-            console.error(`Error fetching metadata for ${mintAddress} from Magic Eden:`, error);
+            // Non-blocking - log error but return null to allow verification to continue
+            if (retryCount === 0) {
+                console.log(`Magic Eden: Metadata fetch error for ${mintAddress.slice(0, 8)}..., will retry`);
+            }
+            if (retryCount >= maxRetries - 1) {
+                console.log(`Magic Eden: Giving up on metadata for ${mintAddress.slice(0, 8)}..., continuing verification`);
+            }
             return null;
         }
     }
@@ -416,16 +426,21 @@ export const extractClassFromMetadata = (metadata, classAttributeName = 'Class')
  * @param {string} collectionSymbol The collection symbol to filter by.
  * @returns {Promise<Array>} Array of NFTs from the specified collection with attributes.
  */
-export const getNftsFromCollectionByWallet = async (walletAddress, collectionSymbol, retries = 3) => {
+export const getNftsFromCollectionByWallet = async (walletAddress, collectionSymbol, maxRetries = 10) => {
     const url = `https://api-mainnet.magiceden.dev/v2/wallets/${walletAddress}/tokens?collectionSymbol=${encodeURIComponent(collectionSymbol)}`;
     const options = {
         method: 'GET',
         headers: { accept: 'application/json' }
     };
 
-    for (let attempt = 1; attempt <= retries; attempt++) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-            console.log(`Magic Eden: Fetching ${collectionSymbol} NFTs for wallet: ${walletAddress} (attempt ${attempt}/${retries})`);
+            if (attempt === 1) {
+                console.log(`Magic Eden: Fetching ${collectionSymbol} NFTs for wallet: ${walletAddress}`);
+            } else {
+                console.log(`Magic Eden: Retry attempt ${attempt}/${maxRetries} for ${collectionSymbol}`);
+            }
+            
             const response = await fetch(url, options);
             
             if (!response.ok) {
@@ -436,25 +451,35 @@ export const getNftsFromCollectionByWallet = async (walletAddress, collectionSym
                 
                 if (response.status === 429 || response.status === 503) {
                     // Rate limited or service unavailable - retry with exponential backoff
-                    if (attempt < retries) {
-                        const delay = Math.min(1000 * Math.pow(2, attempt), 10000); // Max 10 seconds
-                        console.log(`Magic Eden: Rate limited (${response.status}), retrying in ${delay}ms...`);
+                    if (attempt < maxRetries) {
+                        // Exponential backoff: 2s, 4s, 8s, 16s, 32s, 60s, 60s, 60s...
+                        const baseDelay = 1000 * Math.pow(2, attempt);
+                        const delay = Math.min(baseDelay, 60000); // Max 60 seconds
+                        console.log(`Magic Eden: Rate limited (${response.status}), waiting ${delay/1000}s before retry ${attempt + 1}/${maxRetries}...`);
                         await new Promise(resolve => setTimeout(resolve, delay));
                         continue;
                     }
-                    // Last attempt failed - throw to trigger fallback
+                    // Last attempt failed - throw to trigger Helius fallback
+                    console.log(`Magic Eden: Rate limited after ${maxRetries} attempts, will use Helius fallback`);
                     throw new Error(`Magic Eden API error: ${response.statusText}`);
                 }
                 
                 throw new Error(`Magic Eden API error: ${response.statusText}`);
             }
             
-            return await response.json();
+            const data = await response.json();
+            console.log(`Magic Eden: Successfully fetched ${data.length} NFTs for ${collectionSymbol}`);
+            return data;
         } catch (error) {
-            if (attempt === retries) {
-                console.error(`Error fetching ${collectionSymbol} NFTs from Magic Eden (all retries exhausted):`, error);
+            if (attempt === maxRetries) {
+                console.log(`Magic Eden: Failed after ${maxRetries} attempts, triggering Helius fallback`);
                 throw error; // Throw on last attempt to trigger fallback
             }
+            
+            // Network error or other issue - wait before retry
+            const delay = Math.min(5000 * attempt, 60000);
+            console.log(`Magic Eden: Error on attempt ${attempt}, retrying in ${delay/1000}s...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
         }
     }
     
