@@ -555,19 +555,41 @@ class BoosterService {
   /**
    * Get boosters with full NFT metadata including images
    * This is the main method for frontend to get displayable booster data
+   * AUTO-DETECTS boosters if none are found in database (Solution 1)
    * @param {string} firebaseUid - User's Firebase UID
    * @returns {Promise<Object>} Boosters with metadata
    */
   async getBoostersWithMetadata(firebaseUid) {
     try {
-      // First get the user's boosters
-      const boosters = await this.getUserBoosters(firebaseUid);
+      // First get the user's boosters from database/cache
+      let boosters = await this.getUserBoosters(firebaseUid);
       
+      // AUTO-DETECT: If no boosters found, trigger detection automatically
+      if (!boosters || boosters.length === 0) {
+        console.log(`🔍 No boosters in database for ${firebaseUid}, triggering auto-detection...`);
+        try {
+          boosters = await this.detectAndAssignBoosters(firebaseUid);
+          console.log(`✅ Auto-detection complete: ${boosters.length} boosters found`);
+        } catch (detectionError) {
+          console.error(`⚠️ Auto-detection failed for ${firebaseUid}:`, detectionError.message);
+          // Return empty result if detection fails
+          return {
+            boosters: [],
+            stackedMultiplier: 1.0,
+            nftDetails: [],
+            autoDetectionAttempted: true,
+            autoDetectionFailed: true
+          };
+        }
+      }
+      
+      // If still no boosters after detection, return empty
       if (!boosters || boosters.length === 0) {
         return {
           boosters: [],
           stackedMultiplier: 1.0,
-          nftDetails: []
+          nftDetails: [],
+          autoDetectionAttempted: true
         };
       }
 
