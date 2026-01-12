@@ -347,7 +347,8 @@ class MagicEdenRateLimiter {
         this.processing = false;
     }
 
-    async fetchSingleNftMetadata(mintAddress) {
+    async fetchSingleNftMetadata(mintAddress, retryCount = 0) {
+        const maxRetries = 3;
         const url = `https://api-mainnet.magiceden.dev/v2/tokens/${mintAddress}`;
         const options = {
             method: 'GET',
@@ -357,10 +358,17 @@ class MagicEdenRateLimiter {
         try {
             const response = await fetch(url, options);
             if (!response.ok) {
-                if (response.status === 429) {
-                    // Rate limited - wait longer
-                    await new Promise(resolve => setTimeout(resolve, this.retryDelay));
-                    return this.fetchSingleNftMetadata(mintAddress); // Retry
+                if (response.status === 429 || response.status === 503) {
+                    // Rate limited or service unavailable
+                    if (retryCount < maxRetries) {
+                        const delay = Math.min(this.retryDelay * Math.pow(2, retryCount), 30000); // Exponential backoff, max 30s
+                        console.log(`Magic Eden: Rate limited for ${mintAddress}, retrying in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        return this.fetchSingleNftMetadata(mintAddress, retryCount + 1); // Retry
+                    }
+                    // Max retries reached - return null instead of throwing
+                    console.log(`Magic Eden: Failed to fetch metadata for ${mintAddress} after ${maxRetries} retries`);
+                    return null;
                 }
                 throw new Error(`Magic Eden API error: ${response.statusText}`);
             }
@@ -408,28 +416,49 @@ export const extractClassFromMetadata = (metadata, classAttributeName = 'Class')
  * @param {string} collectionSymbol The collection symbol to filter by.
  * @returns {Promise<Array>} Array of NFTs from the specified collection with attributes.
  */
-export const getNftsFromCollectionByWallet = async (walletAddress, collectionSymbol) => {
+export const getNftsFromCollectionByWallet = async (walletAddress, collectionSymbol, retries = 3) => {
     const url = `https://api-mainnet.magiceden.dev/v2/wallets/${walletAddress}/tokens?collectionSymbol=${encodeURIComponent(collectionSymbol)}`;
     const options = {
         method: 'GET',
         headers: { accept: 'application/json' }
     };
 
-    try {
-        console.log(`Magic Eden: Fetching ${collectionSymbol} NFTs for wallet: ${walletAddress}`);
-        const response = await fetch(url, options);
-        if (!response.ok) {
-            if (response.status === 404) {
-                console.log(`Magic Eden: No NFTs found for collection ${collectionSymbol}`);
-                return [];
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            console.log(`Magic Eden: Fetching ${collectionSymbol} NFTs for wallet: ${walletAddress} (attempt ${attempt}/${retries})`);
+            const response = await fetch(url, options);
+            
+            if (!response.ok) {
+                if (response.status === 404) {
+                    console.log(`Magic Eden: No NFTs found for collection ${collectionSymbol}`);
+                    return [];
+                }
+                
+                if (response.status === 429 || response.status === 503) {
+                    // Rate limited or service unavailable - retry with exponential backoff
+                    if (attempt < retries) {
+                        const delay = Math.min(1000 * Math.pow(2, attempt), 10000); // Max 10 seconds
+                        console.log(`Magic Eden: Rate limited (${response.status}), retrying in ${delay}ms...`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue;
+                    }
+                    // Last attempt failed - throw to trigger fallback
+                    throw new Error(`Magic Eden API error: ${response.statusText}`);
+                }
+                
+                throw new Error(`Magic Eden API error: ${response.statusText}`);
             }
-            throw new Error(`Magic Eden API error: ${response.statusText}`);
+            
+            return await response.json();
+        } catch (error) {
+            if (attempt === retries) {
+                console.error(`Error fetching ${collectionSymbol} NFTs from Magic Eden (all retries exhausted):`, error);
+                throw error; // Throw on last attempt to trigger fallback
+            }
         }
-        return await response.json();
-    } catch (error) {
-        console.error(`Error fetching ${collectionSymbol} NFTs from Magic Eden:`, error);
-        return [];
     }
+    
+    return [];
 };
 
 /**
@@ -457,22 +486,48 @@ export const checkNftOwnershipWithClass = async (walletAddress, collectionConfig
         const heliusNfts = [];
         const seenMints = new Set(); // Track unique mints to avoid duplicates
         
-        // Try Magic Eden
+        // Try Magic Eden with proper error handling
+        // NOTE: Magic Eden's collectionSymbol filter is unreliable - it can return NFTs from wrong collections
+        // We'll fetch from Magic Eden but ALWAYS verify with Helius using the collection address
+        let magicEdenError = null;
         for (const symbol of collectionConfig.symbols) {
-            console.log(`Magic Eden: Fetching ${symbol} NFTs for wallet: ${walletAddress}`);
-            const fetchedNfts = await getNftsFromCollectionByWallet(walletAddress, symbol);
-            
-            if (fetchedNfts && fetchedNfts.length > 0) {
-                // Magic Eden API filters by collectionSymbol in the request, so all returned NFTs
-                // are already from the correct collection. No need to filter again.
-                // The collectionAddress field is not reliably present in Magic Eden responses.
-                console.log(`Magic Eden: Found ${fetchedNfts.length} NFTs for collection ${symbol}`);
+            try {
+                const fetchedNfts = await getNftsFromCollectionByWallet(walletAddress, symbol);
                 
-                magicEdenNfts.push(...fetchedNfts);
-                fetchedNfts.forEach(nft => {
-                    seenMints.add((nft.mintAddress || nft.tokenMint || nft.id)?.toLowerCase());
-                });
-                break; // Found NFTs from this symbol, use them
+                if (fetchedNfts && fetchedNfts.length > 0) {
+                    console.log(`Magic Eden: Fetched ${fetchedNfts.length} NFTs for symbol ${symbol}`);
+                    
+                    // ALWAYS filter by collection address to prevent false positives
+                    // Check if any NFTs have collectionAddress field
+                    const hasCollectionField = fetchedNfts.some(nft => 
+                        nft.collectionAddress || nft.collection?.address
+                    );
+                    
+                    if (hasCollectionField && collectionConfig.address) {
+                        // Some NFTs have collection address - filter by it to ensure correctness
+                        const collectionNfts = fetchedNfts.filter(nft => {
+                            const nftCollectionAddress = nft.collectionAddress || nft.collection?.address;
+                            return nftCollectionAddress?.toLowerCase() === collectionConfig.address?.toLowerCase();
+                        });
+                        console.log(`Magic Eden: Filtered to ${collectionNfts.length} NFTs matching collection address ${collectionConfig.address}`);
+                        
+                        if (collectionNfts.length > 0) {
+                            magicEdenNfts.push(...collectionNfts);
+                            collectionNfts.forEach(nft => {
+                                seenMints.add((nft.mintAddress || nft.tokenMint || nft.id)?.toLowerCase());
+                            });
+                            break; // Found NFTs from this symbol, use them
+                        }
+                    } else {
+                        // No collection address field in Magic Eden response
+                        // Don't trust the symbol filter - skip Magic Eden and rely on Helius
+                        console.log(`Magic Eden: No collectionAddress field found. Cannot verify collection. Will rely on Helius.`);
+                    }
+                }
+            } catch (error) {
+                magicEdenError = error;
+                console.log(`Magic Eden: Failed to fetch ${symbol} - ${error.message}. Will use Helius fallback.`);
+                // Continue to Helius fallback
             }
         }
         

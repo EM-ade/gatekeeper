@@ -265,16 +265,30 @@ async function checkUserNFTs(input) {
       console.log(`\n   📋 Sample NFTs (showing first 3):`);
       nfts.slice(0, 3).forEach((nft, idx) => {
         const name = nft.content?.metadata?.name || nft.name || 'Unknown';
-        const mint = nft.id || nft.mintAddress || 'Unknown';
+        const mint = nft.id || nft.mintAddress || nft.tokenMint || 'Unknown';
         console.log(`      ${idx + 1}. ${name}`);
         console.log(`         Mint: ${mint}`);
         
-        // Show attributes if available
+        // Show attributes if available (Helius format)
         if (nft.content?.metadata?.attributes) {
-          const classAttr = nft.content.metadata.attributes.find(a => a.trait_type === 'Class');
+          const classAttr = nft.content.metadata.attributes.find(a => a.trait_type === 'Class' || a.trait_type === 'CLASS');
           if (classAttr) {
             console.log(`         Class: ${classAttr.value}`);
           }
+        }
+        
+        // Show attributes if available (Magic Eden format)
+        if (nft.attributes && Array.isArray(nft.attributes)) {
+          const classAttr = nft.attributes.find(a => a.trait_type === 'Class' || a.trait_type === 'CLASS');
+          if (classAttr) {
+            console.log(`         Class: ${classAttr.value}`);
+          }
+          
+          // Show other interesting attributes
+          const backgroundAttr = nft.attributes.find(a => a.trait_type === 'Background');
+          const skinAttr = nft.attributes.find(a => a.trait_type === 'Skin Tone');
+          if (backgroundAttr) console.log(`         Background: ${backgroundAttr.value}`);
+          if (skinAttr) console.log(`         Skin Tone: ${skinAttr.value}`);
         }
       });
     }

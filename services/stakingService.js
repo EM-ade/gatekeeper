@@ -688,7 +688,25 @@ class StakingService {
 
     console.log(`🚀 Starting claim operation for user ${firebaseUid}`);
 
-    // 1. Calculate dynamic fee based on current SOL price
+    // 1. Check for duplicate claim transaction FIRST (before any processing)
+    console.log(`🔍 Step 1: Checking for duplicate claim transaction...`);
+    const existingTx = await this.db
+      .collection(TRANSACTIONS_COLLECTION)
+      .where("fee_tx", "==", txSignature)
+      .where("type", "==", "CLAIM")
+      .limit(1)
+      .get();
+
+    if (!existingTx.empty) {
+      console.error(`❌ DUPLICATE CLAIM DETECTED!`);
+      console.error(`   - Fee signature: ${txSignature}`);
+      console.error(`   - Existing doc ID: ${existingTx.docs[0].id}`);
+      console.error(`   - User: ${firebaseUid}`);
+      throw new StakingError("Claim transaction already processed");
+    }
+    console.log(`✅ No duplicate claim found`);
+
+    // 2. Calculate dynamic fee based on current SOL price
     const { getFeeInSol } = await import("../utils/solPrice.js");
     const {
       solAmount: feeAmount,
@@ -702,7 +720,7 @@ class StakingService {
       )} SOL (SOL price: $${solPrice})`
     );
 
-    // 2. Verify SOL Fee payment (with 1% tolerance)
+    // 3. Verify SOL Fee payment (with 1% tolerance)
     const tolerance = 0.01;
     const minFee = feeAmount * (1 - tolerance);
     const maxFee = feeAmount * (1 + tolerance);
@@ -713,8 +731,47 @@ class StakingService {
     );
     if (!isValidFee) throw new StakingError("Invalid Fee Transaction");
 
-    // 3. Pre-fetch price data BEFORE the transaction (critical fix!)
-    console.log(`📊 Pre-fetching price data before Firestore transaction...`);
+    // 4. Get user's position to calculate reward amount for balance check
+    console.log(`🔍 Step 4: Checking user's pending rewards...`);
+    const posRef = this.db.collection(POSITIONS_COLLECTION).doc(firebaseUid);
+    const posDoc = await posRef.get();
+    if (!posDoc.exists) throw new StakingError("No staking position found");
+    
+    const posData = posDoc.data();
+    const pendingRewards = posData.pending_rewards || 0;
+    
+    if (pendingRewards <= 0) {
+      throw new StakingError("No rewards to claim. Do not pay the fee.");
+    }
+    
+    console.log(`   Pending rewards: ${pendingRewards.toFixed(9)} SOL`);
+
+    // 5. Check treasury SOL balance BEFORE processing claim
+    console.log(`🔍 Step 5: Checking treasury SOL balance...`);
+    const treasuryKeypair = Keypair.fromSecretKey(
+      bs58.decode(process.env.STAKING_PRIVATE_KEY)
+    );
+    const treasuryBalance = await this.connection.getBalance(treasuryKeypair.publicKey);
+    const treasuryBalanceSol = treasuryBalance / 1e9;
+
+    console.log(`💰 Treasury balance: ${treasuryBalanceSol.toFixed(6)} SOL`);
+    console.log(`💰 Need to send: ${pendingRewards.toFixed(6)} SOL`);
+    console.log(`💰 Gas fee estimate: ~0.000005 SOL`);
+
+    const minRequiredSol = pendingRewards + 0.00001; // reward + gas buffer
+    if (treasuryBalanceSol < minRequiredSol) {
+      console.error(`❌ INSUFFICIENT TREASURY BALANCE!`);
+      console.error(`   Treasury: ${treasuryBalanceSol.toFixed(6)} SOL`);
+      console.error(`   Required: ${minRequiredSol.toFixed(6)} SOL`);
+      console.error(`   Shortfall: ${(minRequiredSol - treasuryBalanceSol).toFixed(6)} SOL`);
+      throw new StakingError(
+        `Service temporarily unavailable. Please try again later or contact support.`
+      );
+    }
+    console.log(`✅ Treasury has sufficient SOL (${treasuryBalanceSol.toFixed(6)} SOL)`);
+
+    // 6. Pre-fetch price data BEFORE the transaction (critical fix!)
+    console.log(`📊 Step 6: Pre-fetching price data before Firestore transaction...`);
     const { getMkinPriceSOL } = await import("../utils/mkinPrice.js");
     const tokenPriceSol = await getMkinPriceSOL();
     const now = admin.firestore.Timestamp.now();
@@ -722,7 +779,7 @@ class StakingService {
 
     let rewardAmount = 0;
 
-    // 4. Update in Firestore (atomic transaction)
+    // 7. Update in Firestore (atomic transaction)
     console.log(`📝 Starting Firestore transaction...`);
 
     try {
@@ -805,7 +862,7 @@ class StakingService {
       throw new StakingError(`Failed to update claim position: ${transactionError.message}`);
     }
 
-    // 5. Send SOL to User (Using Treasury Private Key)
+    // 6. Send SOL to User (Using Treasury Private Key)
     // NOTE: This must be done AFTER the DB transaction commits to avoid sending funds if DB fails.
     // However, if this fails, user loses their claim record state?
     // Ideally: We mark as "Processing" in DB, send SOL, then mark "Complete".
@@ -884,15 +941,59 @@ class StakingService {
     );
     if (!isValidFee) throw new StakingError("Invalid Fee Transaction");
 
-    // 3. Pre-fetch price data BEFORE the transaction (critical fix!)
-    console.log(`📊 Pre-fetching price data before Firestore transaction...`);
+    // 3. Check vault MKIN balance BEFORE accepting fee
+    console.log(`🔍 Step 3: Checking vault MKIN balance...`);
+    const vaultAddress = new PublicKey(process.env.STAKING_WALLET_ADDRESS);
+    const vaultATA = await getAssociatedTokenAddress(this.tokenMint, vaultAddress);
+
+    try {
+      const vaultAccount = await getAccount(this.connection, vaultATA);
+      const vaultBalance = Number(vaultAccount.amount) / 1e9;
+      
+      console.log(`💰 Vault MKIN balance: ${vaultBalance.toLocaleString()} MKIN`);
+      console.log(`💰 Need to send: ${amount.toLocaleString()} MKIN`);
+      
+      if (vaultBalance < amount) {
+        console.error(`❌ INSUFFICIENT VAULT MKIN BALANCE!`);
+        console.error(`   Vault: ${vaultBalance.toLocaleString()} MKIN`);
+        console.error(`   Required: ${amount.toLocaleString()} MKIN`);
+        console.error(`   Shortfall: ${(amount - vaultBalance).toLocaleString()} MKIN`);
+        throw new StakingError(
+          `Service temporarily unavailable. Please try again later or contact support.`
+        );
+      }
+      console.log(`✅ Vault has sufficient MKIN`);
+    } catch (error) {
+      if (error instanceof StakingError) throw error;
+      console.error(`❌ Failed to check vault balance: ${error.message}`);
+      throw new StakingError(`Service temporarily unavailable. Please try again later or contact support.`);
+    }
+
+    // 4. Check vault SOL balance for transaction fees
+    console.log(`🔍 Step 4: Checking vault SOL balance...`);
+    const vaultSolBalance = await this.connection.getBalance(vaultAddress);
+    const vaultSolBalanceSol = vaultSolBalance / 1e9;
+    console.log(`💰 Vault SOL balance: ${vaultSolBalanceSol.toFixed(6)} SOL`);
+
+    if (vaultSolBalanceSol < 0.001) {
+      console.error(`❌ INSUFFICIENT VAULT SOL FOR GAS!`);
+      console.error(`   Vault SOL: ${vaultSolBalanceSol.toFixed(6)} SOL`);
+      console.error(`   Required: 0.001 SOL minimum`);
+      throw new StakingError(
+        `Service temporarily unavailable. Please try again later or contact support.`
+      );
+    }
+    console.log(`✅ Vault has sufficient SOL for gas fees`);
+
+    // 5. Pre-fetch price data BEFORE the transaction (critical fix!)
+    console.log(`📊 Step 5: Pre-fetching price data before Firestore transaction...`);
     const { getMkinPriceSOL } = await import("../utils/mkinPrice.js");
     const tokenPriceSol = await getMkinPriceSOL();
     const now = admin.firestore.Timestamp.now();
     console.log(`✅ Price data fetched: ${tokenPriceSol.toFixed(6)} SOL/MKIN`);
 
-    // 4. Update in Firestore (atomic transaction)
-    console.log(`📝 Starting Firestore transaction...`);
+    // 6. Update in Firestore (atomic transaction)
+    console.log(`📝 Step 6: Starting Firestore transaction...`);
 
     try {
       await this.db.runTransaction(async (t) => {
