@@ -1508,24 +1508,25 @@ class StakingService {
       return 0;
     }
     
-    // Get MKIN price in SOL (from position data or fetch current price)
-    // The principal was already converted to SOL value when staked
-    // total_entry_fees_mkin_value tells us the SOL value at stake time
-    const principalValueSOL = positionData.total_entry_fees_mkin_value || 0;
+    // Get MKIN price in SOL at time of stake
+    // Calculate: tokenPriceSol = total_entry_fees_mkin_value / principal_amount
+    const totalEntryFeesSOL = positionData.total_entry_fees_mkin_value || 0;
     
-    if (principalValueSOL <= 0) {
-      console.log(`⚠️  No SOL value found for staked MKIN, using approximate calculation`);
-      // Fallback: approximate based on current market (0.00001 SOL per MKIN as estimate)
-      // This should ideally never be used - always store SOL value at stake time
+    if (totalEntryFeesSOL <= 0 || principalAmountMKIN <= 0) {
+      console.log(`⚠️  Invalid stake data: no SOL value or principal amount`);
       return 0;
     }
     
+    // Calculate token price at stake time
+    const tokenPriceSol = totalEntryFeesSOL / principalAmountMKIN;
+    
     // Annual return rate (30% APY)
     const ANNUAL_RATE = 0.30;
-    const SECONDS_PER_YEAR = 365.25 * 24 * 60 * 60; // ~31,557,600
+    const SECONDS_PER_YEAR = 365 * 24 * 60 * 60; // 31,536,000 (match frontend exactly)
     
-    // Calculate base rewards: (principal_SOL_value * 30% * time_staked) / year
-    const baseRewards = (principalValueSOL * ANNUAL_RATE * secondsStaked) / SECONDS_PER_YEAR;
+    // Calculate base rewards (matches frontend formula exactly):
+    // baseRewards = (stakedAmount * 0.3 * tokenPriceSol * durationSeconds) / SECONDS_IN_YEAR
+    const baseRewards = (principalAmountMKIN * ANNUAL_RATE * tokenPriceSol * secondsStaked) / SECONDS_PER_YEAR;
     
     // Apply booster multiplier
     const totalRewards = baseRewards * boosterMultiplier;
@@ -1534,11 +1535,12 @@ class StakingService {
     const totalClaimedSol = positionData.total_claimed_sol || 0;
     const pendingRewards = Math.max(0, totalRewards - totalClaimedSol);
     
-    console.log(`📊 Reward Calculation:`);
+    console.log(`📊 Reward Calculation (matches frontend formula):`);
     console.log(`   Principal: ${principalAmountMKIN.toLocaleString()} MKIN`);
-    console.log(`   Principal SOL value: ${principalValueSOL.toFixed(6)} SOL`);
+    console.log(`   Token price at stake: ${tokenPriceSol.toFixed(8)} SOL/MKIN`);
+    console.log(`   Principal SOL value: ${totalEntryFeesSOL.toFixed(6)} SOL`);
     console.log(`   Seconds staked: ${secondsStaked.toLocaleString()} (${(secondsStaked / 86400).toFixed(2)} days)`);
-    console.log(`   Annual rate: ${(ANNUAL_RATE * 100)}% APY`);
+    console.log(`   Annual rate: ${(ANNUAL_RATE * 100)}% ROI`);
     console.log(`   Base rewards: ${baseRewards.toFixed(9)} SOL`);
     console.log(`   Booster: ${boosterMultiplier}x`);
     console.log(`   Total rewards: ${totalRewards.toFixed(9)} SOL`);
