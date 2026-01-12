@@ -847,14 +847,12 @@ class StakingService {
           )} SOL`
         );
 
-        // Calc Pending (using checkpoint-based 30% ROI)
-        // The real-time calculation in getOverview handles accrual since last update
-        let totalPending = posData.pending_rewards || 0;
-
-        if (totalPending <= 0) throw new StakingError("No rewards to claim");
-
-        // Payout Logic
-        rewardAmount = totalPending;
+        // Use the real-time calculated pending rewards (already validated above)
+        // We calculated this BEFORE the transaction to ensure it's valid
+        rewardAmount = pendingRewards;
+        
+        console.log(`   Using real-time calculated reward: ${rewardAmount.toFixed(9)} SOL`);
+        console.log(`   (Database pending_rewards was: ${posData.pending_rewards || 0} SOL - outdated)`);
 
         // Reset User pending rewards
         const previousPending = posData.pending_rewards || 0;
