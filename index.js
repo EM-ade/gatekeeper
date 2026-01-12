@@ -2219,4 +2219,60 @@ app.listen(PORT, HOST, () => {
   console.log(`🚀 HTTP API listening on ${HOST}:${PORT}`);
   console.log(`📊 Environment: ${envInfo.nodeEnv}`);
   console.log(`🔧 Feature flags:`, environmentConfig.featureFlags);
+  
+  // Initialize automatic booster refresh
+  setupAutomaticBoosterRefresh();
 });
+
+/**
+ * Set up automatic periodic booster refresh
+ * Runs every 30 minutes to keep all active stakers' boosters up-to-date
+ */
+async function setupAutomaticBoosterRefresh() {
+  const REFRESH_INTERVAL = 30 * 60 * 1000; // 30 minutes
+  
+  console.log('⚡ Setting up automatic booster refresh...');
+  console.log(`   Interval: Every 30 minutes`);
+  
+  // Import booster service
+  const BoosterService = (await import('./services/boosterService.js')).default;
+  const boosterService = new BoosterService();
+  
+  // Function to run the refresh
+  async function runBoosterRefresh() {
+    const startTime = Date.now();
+    console.log('\n' + '='.repeat(80));
+    console.log(`🔄 AUTOMATIC BOOSTER REFRESH STARTED`);
+    console.log(`   Time: ${new Date().toISOString()}`);
+    console.log('='.repeat(80));
+    
+    try {
+      await boosterService.refreshAllActiveBoosters();
+      const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+      console.log('='.repeat(80));
+      console.log(`✅ AUTOMATIC BOOSTER REFRESH COMPLETED`);
+      console.log(`   Duration: ${duration}s`);
+      console.log(`   Next refresh: ${new Date(Date.now() + REFRESH_INTERVAL).toLocaleTimeString()}`);
+      console.log('='.repeat(80) + '\n');
+    } catch (error) {
+      console.error('='.repeat(80));
+      console.error(`❌ AUTOMATIC BOOSTER REFRESH FAILED`);
+      console.error(`   Error: ${error.message}`);
+      console.error(`   Next retry: ${new Date(Date.now() + REFRESH_INTERVAL).toLocaleTimeString()}`);
+      console.error('='.repeat(80) + '\n');
+    }
+  }
+  
+  // Run first refresh 2 minutes after server starts (give time for everything to initialize)
+  setTimeout(() => {
+    console.log('🚀 Running initial booster refresh (2 minutes after startup)...');
+    runBoosterRefresh();
+  }, 2 * 60 * 1000);
+  
+  // Set up recurring refresh every 30 minutes
+  setInterval(runBoosterRefresh, REFRESH_INTERVAL);
+  
+  console.log('✅ Automatic booster refresh configured');
+  console.log(`   First refresh: ${new Date(Date.now() + 2 * 60 * 1000).toLocaleTimeString()}`);
+  console.log(`   Then every 30 minutes`);
+}

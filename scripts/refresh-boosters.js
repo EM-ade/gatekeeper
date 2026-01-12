@@ -31,8 +31,8 @@ async function refreshAllBoosters() {
   process.exit(0);
 }
 
-// Run if called directly
-if (require.main === module) {
+// Run if called directly (ES module way)
+if (import.meta.url === `file://${process.argv[1]}`) {
   refreshAllBoosters();
 }
 
