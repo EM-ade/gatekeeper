@@ -752,13 +752,19 @@ class StakingService {
       )} SOL (SOL price: $${solPrice})`
     );
 
-    // 4. Verify SOL Fee payment (with 1% tolerance)
+    // 4. Verify SOL Fee payment (USD-based validation for future-proofing)
     console.log(`${logPrefix} 🔍 Step 4: Verifying fee transaction...`);
     console.log(`   Transaction: ${txSignature}`);
-    const tolerance = 0.01;
-    const minFee = feeAmount * (1 - tolerance);
-    const maxFee = feeAmount * (1 + tolerance);
-    console.log(`   Expected fee: ${minFee.toFixed(4)} - ${maxFee.toFixed(4)} SOL ($${usdAmount})`);
+    
+    // Accept any transaction within ±20% of the expected SOL amount
+    // This handles large SOL price swings while still validating destination
+    const tolerancePercent = 0.20; // 20% tolerance
+    const minFee = feeAmount * (1 - tolerancePercent);
+    const maxFee = feeAmount * (1 + tolerancePercent);
+    
+    console.log(`   Expected fee: ~${feeAmount.toFixed(4)} SOL ($${usdAmount})`);
+    console.log(`   Acceptable range: ${minFee.toFixed(4)} - ${maxFee.toFixed(4)} SOL (±20%)`);
+    console.log(`   Note: We verify destination address and reasonable amount, not exact SOL`);
     
     const isValidFee = await this._verifySolTransfer(
       txSignature,
@@ -770,7 +776,7 @@ class StakingService {
       console.error(`❌ Fee verification failed for transaction: ${txSignature}`);
       console.error(`   Check the detailed logs above for the exact reason`);
       throw new StakingError(
-        "Invalid fee transaction. Please ensure you sent the correct amount to the correct address."
+        "Unable to verify your fee payment. Please wait a moment and try again. If the issue persists, contact support."
       );
     }
     console.log(`${logPrefix} ✅ Fee transaction verified`);
@@ -1395,33 +1401,54 @@ class StakingService {
    * Helper: Verify SOL transfer (for fee payments)
    * Now accepts min/max range for tolerance
    */
-  async _verifySolTransfer(signature, minAmountSol, maxAmountSol) {
+  async _verifySolTransfer(signature, minAmountSol, maxAmountSol, retryCount = 0) {
+    const maxRetries = 3;
     console.log(`🔍 [Fee Verification] Starting verification for transaction: ${signature}`);
     console.log(`   Expected amount range: ${minAmountSol.toFixed(4)} - ${maxAmountSol.toFixed(4)} SOL`);
     
     try {
-      console.log(`   Fetching transaction from RPC...`);
-      const tx = await this.connection.getParsedTransaction(signature, {
+      console.log(`   Fetching transaction from RPC (attempt ${retryCount + 1}/${maxRetries + 1})...`);
+      
+      // Try multiple commitment levels for better reliability
+      let tx = await this.connection.getParsedTransaction(signature, {
         commitment: "confirmed",
         maxSupportedTransactionVersion: 0,
       });
+      
+      // If not found with "confirmed", try "finalized"
+      if (!tx && retryCount === 0) {
+        console.log(`   Not found with "confirmed", trying "finalized"...`);
+        tx = await this.connection.getParsedTransaction(signature, {
+          commitment: "finalized",
+          maxSupportedTransactionVersion: 0,
+        });
+      }
 
       if (!tx) {
-        console.error(`❌ Transaction not found: ${signature}`);
+        // If transaction not found and we have retries left, wait and retry
+        if (retryCount < maxRetries) {
+          const delay = 2000 * (retryCount + 1); // 2s, 4s, 6s
+          console.log(`   Transaction not found yet, waiting ${delay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return this._verifySolTransfer(signature, minAmountSol, maxAmountSol, retryCount + 1);
+        }
+        
+        console.error(`❌ Transaction not found after ${maxRetries + 1} attempts: ${signature}`);
         console.error(`   Possible reasons:`);
-        console.error(`   1. Transaction hasn't been confirmed yet (wait a few seconds)`);
-        console.error(`   2. Wrong transaction signature provided`);
-        console.error(`   3. Transaction is too old (pruned from RPC)`);
+        console.error(`   1. Wrong transaction signature provided`);
+        console.error(`   2. Transaction is too old (pruned from RPC)`);
+        console.error(`   3. RPC node issues (try again in a moment)`);
         return false;
       }
       
       if (!tx.meta) {
         console.error(`❌ Transaction found but has no metadata: ${signature}`);
         console.error(`   This usually means the transaction failed on-chain`);
+        console.error(`   Check transaction on Solscan: https://solscan.io/tx/${signature}`);
         return false;
       }
       
-      console.log(`✅ Transaction found and confirmed`);
+      console.log(`✅ Transaction found and confirmed (slot: ${tx.slot})`);
 
       const stakingAddr = process.env.STAKING_WALLET_ADDRESS;
       if (!stakingAddr)
@@ -1508,24 +1535,25 @@ class StakingService {
       return 0;
     }
     
-    // Get MKIN price in SOL (from position data or fetch current price)
-    // The principal was already converted to SOL value when staked
-    // total_entry_fees_mkin_value tells us the SOL value at stake time
-    const principalValueSOL = positionData.total_entry_fees_mkin_value || 0;
+    // Get MKIN price in SOL at time of stake
+    // Calculate: tokenPriceSol = total_entry_fees_mkin_value / principal_amount
+    const totalEntryFeesSOL = positionData.total_entry_fees_mkin_value || 0;
     
-    if (principalValueSOL <= 0) {
-      console.log(`⚠️  No SOL value found for staked MKIN, using approximate calculation`);
-      // Fallback: approximate based on current market (0.00001 SOL per MKIN as estimate)
-      // This should ideally never be used - always store SOL value at stake time
+    if (totalEntryFeesSOL <= 0 || principalAmountMKIN <= 0) {
+      console.log(`⚠️  Invalid stake data: no SOL value or principal amount`);
       return 0;
     }
     
+    // Calculate token price at stake time
+    const tokenPriceSol = totalEntryFeesSOL / principalAmountMKIN;
+    
     // Annual return rate (30% APY)
     const ANNUAL_RATE = 0.30;
-    const SECONDS_PER_YEAR = 365.25 * 24 * 60 * 60; // ~31,557,600
+    const SECONDS_PER_YEAR = 365 * 24 * 60 * 60; // 31,536,000 (match frontend exactly)
     
-    // Calculate base rewards: (principal_SOL_value * 30% * time_staked) / year
-    const baseRewards = (principalValueSOL * ANNUAL_RATE * secondsStaked) / SECONDS_PER_YEAR;
+    // Calculate base rewards (matches frontend formula exactly):
+    // baseRewards = (stakedAmount * 0.3 * tokenPriceSol * durationSeconds) / SECONDS_IN_YEAR
+    const baseRewards = (principalAmountMKIN * ANNUAL_RATE * tokenPriceSol * secondsStaked) / SECONDS_PER_YEAR;
     
     // Apply booster multiplier
     const totalRewards = baseRewards * boosterMultiplier;
@@ -1534,11 +1562,12 @@ class StakingService {
     const totalClaimedSol = positionData.total_claimed_sol || 0;
     const pendingRewards = Math.max(0, totalRewards - totalClaimedSol);
     
-    console.log(`📊 Reward Calculation:`);
+    console.log(`📊 Reward Calculation (matches frontend formula):`);
     console.log(`   Principal: ${principalAmountMKIN.toLocaleString()} MKIN`);
-    console.log(`   Principal SOL value: ${principalValueSOL.toFixed(6)} SOL`);
+    console.log(`   Token price at stake: ${tokenPriceSol.toFixed(8)} SOL/MKIN`);
+    console.log(`   Principal SOL value: ${totalEntryFeesSOL.toFixed(6)} SOL`);
     console.log(`   Seconds staked: ${secondsStaked.toLocaleString()} (${(secondsStaked / 86400).toFixed(2)} days)`);
-    console.log(`   Annual rate: ${(ANNUAL_RATE * 100)}% APY`);
+    console.log(`   Annual rate: ${(ANNUAL_RATE * 100)}% ROI`);
     console.log(`   Base rewards: ${baseRewards.toFixed(9)} SOL`);
     console.log(`   Booster: ${boosterMultiplier}x`);
     console.log(`   Total rewards: ${totalRewards.toFixed(9)} SOL`);
