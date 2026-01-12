@@ -1535,17 +1535,22 @@ class StakingService {
       return 0;
     }
     
-    // Get MKIN price in SOL at time of stake
-    // Calculate: tokenPriceSol = total_entry_fees_mkin_value / principal_amount
-    const totalEntryFeesSOL = positionData.total_entry_fees_mkin_value || 0;
+    // Get SOL value of staked MKIN at time of stake
+    // The entry fee is 5% of the stake, paid in SOL
+    // So: stake_value_SOL = total_entry_fees_sol / 0.05
+    const entryFeeSOL = positionData.total_entry_fees_sol || 0;
+    const ENTRY_FEE_RATE = 0.05; // 5% entry fee
     
-    if (totalEntryFeesSOL <= 0 || principalAmountMKIN <= 0) {
-      console.log(`⚠️  Invalid stake data: no SOL value or principal amount`);
+    if (entryFeeSOL <= 0) {
+      console.log(`⚠️  No entry fee data found - cannot calculate stake SOL value`);
       return 0;
     }
     
+    // Calculate the SOL value of the full stake
+    const stakeValueSOL = entryFeeSOL / ENTRY_FEE_RATE;
+    
     // Calculate token price at stake time
-    const tokenPriceSol = totalEntryFeesSOL / principalAmountMKIN;
+    const tokenPriceSol = stakeValueSOL / principalAmountMKIN;
     
     // Annual return rate (30% APY)
     const ANNUAL_RATE = 0.30;
@@ -1564,8 +1569,9 @@ class StakingService {
     
     console.log(`📊 Reward Calculation (matches frontend formula):`);
     console.log(`   Principal: ${principalAmountMKIN.toLocaleString()} MKIN`);
-    console.log(`   Token price at stake: ${tokenPriceSol.toFixed(8)} SOL/MKIN`);
-    console.log(`   Principal SOL value: ${totalEntryFeesSOL.toFixed(6)} SOL`);
+    console.log(`   Entry fee paid: ${entryFeeSOL.toFixed(6)} SOL (5% of stake value)`);
+    console.log(`   Stake value in SOL: ${stakeValueSOL.toFixed(6)} SOL`);
+    console.log(`   Token price at stake: ${tokenPriceSol.toFixed(10)} SOL/MKIN`);
     console.log(`   Seconds staked: ${secondsStaked.toLocaleString()} (${(secondsStaked / 86400).toFixed(2)} days)`);
     console.log(`   Annual rate: ${(ANNUAL_RATE * 100)}% ROI`);
     console.log(`   Base rewards: ${baseRewards.toFixed(9)} SOL`);
