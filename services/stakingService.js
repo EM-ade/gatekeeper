@@ -943,6 +943,9 @@ class StakingService {
    * Requires $2 USD fee (~0.02 SOL, dynamic).
    */
   async unstake(firebaseUid, amount, txSignature) {
+    // Ensure network is initialized before proceeding
+    await this._ensureInitialized();
+    
     if (amount <= 0) throw new StakingError("Invalid amount");
     if (!txSignature)
       throw new StakingError("Transaction signature required for fee");
@@ -953,14 +956,14 @@ class StakingService {
     console.log(`🔍 Step 1: Checking for duplicate unstake transaction...`);
     const existingTx = await this.db
       .collection(TRANSACTIONS_COLLECTION)
-      .where("signature", "==", txSignature)
+      .where("fee_tx", "==", txSignature)
       .where("type", "==", "UNSTAKE")
       .limit(1)
       .get();
 
     if (!existingTx.empty) {
       console.error(`❌ DUPLICATE UNSTAKE DETECTED!`);
-      console.error(`   - Transaction signature: ${txSignature}`);
+      console.error(`   - Fee transaction signature: ${txSignature}`);
       console.error(`   - Existing doc ID: ${existingTx.docs[0].id}`);
       console.error(`   - User: ${firebaseUid}`);
       throw new StakingError("Unstake transaction already processed");
@@ -1013,12 +1016,30 @@ class StakingService {
     console.log(`   Expected fee: ~${feeAmount.toFixed(4)} SOL ($${usdAmount})`);
     console.log(`   Acceptable range: ${minFee.toFixed(4)} - ${maxFee.toFixed(4)} SOL (±20%)`);
     
-    const isValidFee = await this._verifySolTransfer(
-      txSignature,
-      minFee,
-      maxFee
-    );
+    console.log(`🔍 Step 2: Verifying SOL fee transaction...`);
+    console.log(`   Transaction signature: ${txSignature}`);
+    console.log(`   Min acceptable: ${minFee.toFixed(9)} SOL`);
+    console.log(`   Max acceptable: ${maxFee.toFixed(9)} SOL`);
+    
+    let isValidFee = false;
+    try {
+      isValidFee = await this._verifySolTransfer(
+        txSignature,
+        minFee,
+        maxFee
+      );
+    } catch (verifyError) {
+      console.error(`❌ ERROR during fee verification:`);
+      console.error(`   Error type: ${verifyError.name}`);
+      console.error(`   Error message: ${verifyError.message}`);
+      console.error(`   Error stack: ${verifyError.stack}`);
+      throw new StakingError(
+        "Unable to verify your fee payment. Please wait a moment and try again. If the issue persists, contact support."
+      );
+    }
+    
     if (!isValidFee) {
+      console.error(`❌ Fee verification returned false for transaction: ${txSignature}`);
       throw new StakingError(
         "Unable to verify your fee payment. Please wait a moment and try again. If the issue persists, contact support."
       );
