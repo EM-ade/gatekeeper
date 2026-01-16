@@ -21,7 +21,7 @@ class ImprovedPeriodicVerificationService {
     this.client = client;
     this.nftService = new NFTVerificationService();
     this.isRunning = false;
-    this.runInterval = 30 * 60 * 1000; // 30 minutes
+    this.runInterval = 6 * 60 * 60 * 1000; // 6 hours
     this.intervalId = null;
   }
 
@@ -34,7 +34,7 @@ class ImprovedPeriodicVerificationService {
       return;
     }
 
-    console.log('[periodic-verification] Starting service (runs every 30 minutes)');
+    console.log('[periodic-verification] Starting service (runs every 6 hours)');
     
     // Run immediately on start
     this.runVerification();
