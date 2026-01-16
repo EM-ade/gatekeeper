@@ -4,7 +4,7 @@ import { checkNftOwnershipWithClass } from '../utils/solana.js';
 import { COLLECTIONS } from '../config/collections.js';
 import RATE_LIMITING_CONFIG from '../config/rateLimiting.js';
 
-const CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 class PeriodicVerificationService {
   constructor(client) {
@@ -23,7 +23,7 @@ class PeriodicVerificationService {
       return;
     }
 
-    console.log('[periodic-verification] Starting periodic verification checks (every 30 minutes)');
+    console.log('[periodic-verification] Starting periodic verification checks (every 6 hours)');
     this.isRunning = true;
 
     // Run immediately on start
@@ -31,7 +31,7 @@ class PeriodicVerificationService {
       console.error('[periodic-verification] Initial check failed:', err);
     });
 
-    // Then run every 30 minutes
+    // Then run every 6 hours
     this.intervalId = setInterval(() => {
       this.runVerificationCheck().catch(err => {
         console.error('[periodic-verification] Periodic check failed:', err);
