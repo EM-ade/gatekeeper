@@ -6,7 +6,7 @@
 class NFTCache {
   constructor(options = {}) {
     this.cache = new Map(); // walletAddress -> { nfts, timestamp, transactionCount }
-    this.cacheDuration = options.cacheDuration || 15 * 60 * 1000; // 15 minutes default
+    this.cacheDuration = options.cacheDuration || 60 * 60 * 1000; // 1 hour default (optimized for Helius credits)
     this.transactionThreshold = options.transactionThreshold || 5; // Invalidate if 5+ new transactions
     
     // Start periodic cleanup
@@ -205,7 +205,7 @@ class NFTCache {
 
 // Export singleton instance
 const nftCache = new NFTCache({
-  cacheDuration: 15 * 60 * 1000, // 15 minutes
+  cacheDuration: 60 * 60 * 1000, // 1 hour (optimized for Helius credits)
   transactionThreshold: 5 // Invalidate if 5+ new transactions
 });
 

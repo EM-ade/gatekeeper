@@ -2226,13 +2226,13 @@ app.listen(PORT, HOST, () => {
 
 /**
  * Set up automatic periodic booster refresh
- * Runs every 30 minutes to keep all active stakers' boosters up-to-date
+ * Runs every 1 hour to keep all active stakers' boosters up-to-date
  */
 async function setupAutomaticBoosterRefresh() {
-  const REFRESH_INTERVAL = 30 * 60 * 1000; // 30 minutes
+  const REFRESH_INTERVAL = 60 * 60 * 1000; // 1 hour (optimized for Helius credits)
   
   console.log('⚡ Setting up automatic booster refresh...');
-  console.log(`   Interval: Every 30 minutes`);
+  console.log(`   Interval: Every 60 minutes`);
   
   // Import booster service
   const BoosterService = (await import('./services/boosterService.js')).default;
@@ -2269,10 +2269,10 @@ async function setupAutomaticBoosterRefresh() {
     runBoosterRefresh();
   }, 2 * 60 * 1000);
   
-  // Set up recurring refresh every 30 minutes
+  // Set up recurring refresh every hour
   setInterval(runBoosterRefresh, REFRESH_INTERVAL);
   
   console.log('✅ Automatic booster refresh configured');
   console.log(`   First refresh: ${new Date(Date.now() + 2 * 60 * 1000).toLocaleTimeString()}`);
-  console.log(`   Then every 30 minutes`);
+  console.log(`   Then every 60 minutes`);
 }
