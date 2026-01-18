@@ -99,9 +99,9 @@ class BoosterService {
       }
     };
 
-    // Cache for booster detection results (5 minutes)
+    // Cache for booster detection results (30 minutes - optimized for Helius credits)
     this.cache = new Map();
-    this.CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+    this.CACHE_TTL = 30 * 60 * 1000; // 30 minutes
     console.log(`📦 Booster cache TTL: ${this.CACHE_TTL}ms (${this.CACHE_TTL / 1000}s)`);
   }
 
