@@ -9,7 +9,10 @@ import {
 import {
   getAssociatedTokenAddress,
   createTransferInstruction,
+  createAssociatedTokenAccountInstruction,
   getAccount,
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { getFirestore } from "firebase-admin/firestore";
 import bs58 from "bs58";
@@ -1080,14 +1083,39 @@ class StakingService {
     const vaultSolBalanceSol = vaultSolBalance / 1e9;
     console.log(`💰 Vault SOL balance: ${vaultSolBalanceSol.toFixed(6)} SOL`);
 
-    if (vaultSolBalanceSol < 0.001) {
+    // Import Discord alerts
+    const { sendVaultCriticalAlert, sendVaultWarningAlert } = await import('../utils/discordAlerts.js');
+
+    // Critical threshold check
+    const CRITICAL_THRESHOLD = 0.01; // 0.01 SOL
+    const WARNING_THRESHOLD = 0.05;  // 0.05 SOL
+    const GAS_PER_TX = 0.000005;     // ~5000 lamports per transaction
+    const MIN_REQUIRED = GAS_PER_TX + 0.001; // Gas + small buffer
+
+    if (vaultSolBalanceSol < CRITICAL_THRESHOLD) {
       console.error(`❌ INSUFFICIENT VAULT SOL FOR GAS!`);
       console.error(`   Vault SOL: ${vaultSolBalanceSol.toFixed(6)} SOL`);
-      console.error(`   Required: 0.001 SOL minimum`);
+      console.error(`   Required: ${MIN_REQUIRED.toFixed(6)} SOL minimum`);
+      console.error(`   🚨 CRITICAL: Sending admin alert...`);
+      
+      // Send critical Discord alert (non-blocking)
+      sendVaultCriticalAlert(vaultSolBalanceSol).catch(err => {
+        console.error('Failed to send Discord alert:', err.message);
+      });
+      
       throw new StakingError(
-        `Service temporarily unavailable. Please try again later or contact support.`
+        `Service temporarily unavailable due to system maintenance. Please try again in a few minutes or contact support.`
       );
+    } else if (vaultSolBalanceSol < WARNING_THRESHOLD) {
+      console.warn(`⚠️  WARNING: Vault SOL getting low: ${vaultSolBalanceSol.toFixed(6)} SOL`);
+      console.warn(`   Sending warning alert to admins...`);
+      
+      // Send warning Discord alert (non-blocking)
+      sendVaultWarningAlert(vaultSolBalanceSol).catch(err => {
+        console.error('Failed to send Discord alert:', err.message);
+      });
     }
+    
     console.log(`✅ Vault has sufficient SOL for gas fees`);
 
     // 5. Pre-fetch price data BEFORE the transaction (critical fix!)
@@ -1424,6 +1452,7 @@ class StakingService {
 
       // Decode vault keypair
       const vaultKeypair = Keypair.fromSecretKey(bs58.decode(vaultPrivateKey));
+      const userPubkey = new PublicKey(userWallet);
 
       // Get ATAs
       const vaultATA = await getAssociatedTokenAddress(
@@ -1432,8 +1461,37 @@ class StakingService {
       );
       const userATA = await getAssociatedTokenAddress(
         tokenMint,
-        new PublicKey(userWallet)
+        userPubkey
       );
+
+      // Check if user's ATA exists, create if needed
+      let needsCreateATA = false;
+      try {
+        await getAccount(this.connection, userATA);
+        console.log(`   ✅ User ATA exists: ${userATA.toBase58()}`);
+      } catch (e) {
+        if (e.name === 'TokenAccountNotFoundError') {
+          console.log(`   ⚠️ User ATA does not exist, will create: ${userATA.toBase58()}`);
+          needsCreateATA = true;
+        } else {
+          throw e;
+        }
+      }
+
+      // Build transaction
+      const transaction = new Transaction();
+
+      // Add create ATA instruction if needed (vault pays for rent)
+      if (needsCreateATA) {
+        const createATAIx = createAssociatedTokenAccountInstruction(
+          vaultKeypair.publicKey, // payer
+          userATA,                // ata address
+          userPubkey,             // owner
+          tokenMint               // mint
+        );
+        transaction.add(createATAIx);
+        console.log(`   📝 Added instruction to create user ATA`);
+      }
 
       // Create transfer instruction
       const transferIx = createTransferInstruction(
@@ -1442,9 +1500,9 @@ class StakingService {
         vaultKeypair.publicKey,
         amount * 1e9 // Convert to raw amount (9 decimals)
       );
+      transaction.add(transferIx);
 
-      // Create and send transaction
-      const transaction = new Transaction().add(transferIx);
+      // Set blockhash and fee payer
       const { blockhash } = await this.connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = vaultKeypair.publicKey;
@@ -1457,7 +1515,7 @@ class StakingService {
       await this.connection.confirmTransaction(signature, "confirmed");
 
       console.log(
-        `✅ Sent ${amount} MKIN to ${userWallet}, signature: ${signature}`
+        `✅ Sent ${amount} MKIN to ${userWallet}${needsCreateATA ? ' (created ATA)' : ''}, signature: ${signature}`
       );
       return signature;
     } catch (e) {
