@@ -67,7 +67,9 @@ class BoosterService {
           // Custom 1/1 booster added 2026-01-13
           "4JD4WdXc7PFKgcgfa8kfVbUb1aCxYrVzmdkuPkiW6jbd",
           // Custom 1/1 booster added 2026-01-14
-          "DdUb3GeoMaDQn52fWka1ZqWypCdh6DXq72gzS4BUefk5"
+          "DdUb3GeoMaDQn52fWka1ZqWypCdh6DXq72gzS4BUefk5",
+          // Custom 1/1 booster added 2026-01-19
+          "31puRHydjyRuCNG4CBZSWvuh7ASR2h7UnhSrJCQqA3KQ"
         ]
       },
       SOLANA_MINER: {
