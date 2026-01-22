@@ -311,6 +311,7 @@ class StakingService {
 
     let baseMiningRate = 0;
     let totalMiningRate = 0;
+    let displayMiningRate = 0; // Stable rate based on locked price at stake time
 
     if (userPos?.principal_amount > 0 && isGoalCompleted) {
       // Fetch current MKIN/SOL price
@@ -328,14 +329,25 @@ class StakingService {
       );
       totalMiningRate = baseMiningRate * boosterMultiplier;
 
+      // Calculate display rate using locked token price (stable for UI)
+      // This prevents visual fluctuations while actual rewards use current price
+      const lockedPrice = userPos.locked_token_price_sol || tokenPriceSol;
+      const lockedBaseMiningRate =
+        (userPos.principal_amount * ROI_PERCENT * lockedPrice) /
+        SECONDS_IN_YEAR;
+      displayMiningRate = lockedBaseMiningRate * boosterMultiplier;
+
       console.log(`⛏️ User mining rate (30% ROI):`);
       console.log(
         `   Principal: ${userPos.principal_amount.toLocaleString()} MKIN`
       );
-      console.log(`   Token Price: ${tokenPriceSol.toFixed(6)} SOL/MKIN`);
-      console.log(`   Base: ${baseMiningRate.toFixed(12)} SOL/s`);
+      console.log(`   Current Token Price: ${tokenPriceSol.toFixed(6)} SOL/MKIN`);
+      console.log(`   Locked Token Price: ${lockedPrice.toFixed(6)} SOL/MKIN`);
+      console.log(`   Base (actual): ${baseMiningRate.toFixed(12)} SOL/s`);
+      console.log(`   Base (display): ${lockedBaseMiningRate.toFixed(12)} SOL/s`);
       console.log(`   Booster: ${boosterMultiplier}x`);
-      console.log(`   Total: ${totalMiningRate.toFixed(12)} SOL/s`);
+      console.log(`   Total (actual): ${totalMiningRate.toFixed(12)} SOL/s`);
+      console.log(`   Total (display): ${displayMiningRate.toFixed(12)} SOL/s`);
     }
 
     // Use boosters from stored position data
@@ -350,8 +362,10 @@ class StakingService {
       user: {
         principal: userPos?.principal_amount || 0,
         pendingRewards: pending,
-        baseMiningRate: baseMiningRate, // Base SOL/s without boosters
-        totalMiningRate: totalMiningRate, // Total SOL/s with boosters
+        baseMiningRate: baseMiningRate, // Base SOL/s without boosters (actual, current price)
+        totalMiningRate: totalMiningRate, // Total SOL/s with boosters (actual, current price)
+        displayMiningRate: displayMiningRate, // Stable rate for UI (locked price at stake time)
+        lockedTokenPriceSol: userPos?.locked_token_price_sol || null, // Token price locked at stake time
         activeBoosters: activeBoosters,
         boosterMultiplier: this.boosterService.calculateStackedMultiplier(
           activeBoosters
@@ -579,6 +593,25 @@ class StakingService {
           console.log(`${logPrefix}   ⏰ First stake - setting stake_start_time`);
         }
         posData.last_stake_time = now;
+
+        // Store locked token price at stake time for stable display rate
+        // This prevents visual fluctuations in mining rate due to token price changes
+        // Use weighted average when user adds more stake at a different price
+        const existingLockedPrice = posData.locked_token_price_sol || 0;
+        if (previousPrincipal > 0 && existingLockedPrice > 0) {
+          // Weighted average: (oldPrice * oldPrincipal + newPrice * newAmount) / totalPrincipal
+          posData.locked_token_price_sol = 
+            ((existingLockedPrice * previousPrincipal) + (tokenPriceSol * amount)) / 
+            posData.principal_amount;
+          console.log(`${logPrefix}   📊 Updated locked token price (weighted avg):`);
+          console.log(`${logPrefix}     - Previous locked price: ${existingLockedPrice.toFixed(9)} SOL/MKIN`);
+          console.log(`${logPrefix}     - Current price: ${tokenPriceSol.toFixed(9)} SOL/MKIN`);
+          console.log(`${logPrefix}     - New locked price: ${posData.locked_token_price_sol.toFixed(9)} SOL/MKIN`);
+        } else {
+          // First stake - lock in current price
+          posData.locked_token_price_sol = tokenPriceSol;
+          console.log(`${logPrefix}   📊 Set initial locked token price: ${posData.locked_token_price_sol.toFixed(9)} SOL/MKIN`);
+        }
 
         // Update Pool Totals (FULL amount)
         const previousPoolTotal = poolData.total_staked || 0;
