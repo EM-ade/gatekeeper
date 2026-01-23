@@ -247,51 +247,23 @@ class StakingService {
         // Checkpoint-based calculation (Fixes "Instant Rewards" bug)
         // REWARD GATING: Only calculate rewards if goal is completed
         if (
-          userPos.updated_at &&
+          userPos?.updated_at &&
           userPos.principal_amount > 0 &&
           isGoalCompleted
         ) {
-          const now = Date.now();
-          const lastUpdateMs = userPos.updated_at.toMillis();
-          const elapsedSeconds = (now - lastUpdateMs) / 1000;
-
-          // NEW: 30% Flat ROI Logic
-          const SECONDS_IN_YEAR = 365 * 24 * 60 * 60;
-          const ROI_PERCENT = 0.3; // 30% per year
-
-          // Fetch current MKIN/SOL price
-          const { getMkinPriceSOL } = await import("../utils/mkinPrice.js");
-          const tokenPriceSol = await getMkinPriceSOL();
-
-          // Calculate accrued rewards: (principal * 30% * price * time) / year
-          const accruedSinceLastUpdate =
-            (userPos.principal_amount *
-              ROI_PERCENT *
-              tokenPriceSol *
-              elapsedSeconds) /
-            SECONDS_IN_YEAR;
-
-          // Apply booster multiplier using new BoosterService
+          // Use the _calculatePendingRewards method which uses locked token price
+          // This ensures pending rewards are consistent with the display mining rate
+          // and don't fluctuate with current token price changes
           const boosterMultiplier = this.boosterService.calculateStackedMultiplier(
             userPos.active_boosters || []
           );
-          const accruedWithBooster = accruedSinceLastUpdate * boosterMultiplier;
+          
+          pending = this._calculatePendingRewards(userPos, boosterMultiplier);
 
-          // Total Pending = Stored Pending (Checkpoint) + Accrued Since Checkpoint
-          pending = (userPos.pending_rewards || 0) + accruedWithBooster;
-
-          console.log(`⛏️ Realtime mining calculation (30% ROI):`);
+          console.log(`⛏️ Pending rewards calculated using locked token price`);
           console.log(
             `   Principal: ${userPos.principal_amount.toLocaleString()} MKIN`
           );
-          console.log(`   Token Price: ${tokenPriceSol.toFixed(6)} SOL/MKIN`);
-          console.log(`   Time since update: ${elapsedSeconds.toFixed(0)}s`);
-          console.log(
-            `   Stored Pending: ${(userPos.pending_rewards || 0).toFixed(
-              9
-            )} SOL`
-          );
-          console.log(`   Accrued (New): ${accruedWithBooster.toFixed(9)} SOL`);
           console.log(`   Total Pending: ${pending.toFixed(9)} SOL`);
         } else {
           pending = 0;
@@ -1670,7 +1642,7 @@ class StakingService {
 
   /**
    * Calculate pending rewards for a user in real-time
-   * This matches the frontend calculation to avoid mismatches
+   * Uses locked token price to ensure stable rewards that don't fluctuate
    * @param {Object} positionData - User's staking position from Firebase
    * @param {number} boosterMultiplier - Combined booster multiplier (default 1.0)
    * @returns {number} - Pending rewards in SOL
@@ -1695,22 +1667,28 @@ class StakingService {
       return 0;
     }
     
-    // Get SOL value of staked MKIN at time of stake
-    // The entry fee is 5% of the stake, paid in SOL
-    // So: stake_value_SOL = total_entry_fees_sol / 0.05
-    const entryFeeSOL = positionData.total_entry_fees_sol || 0;
-    const ENTRY_FEE_RATE = 0.05; // 5% entry fee
+    // Get the locked token price - this is the key to stable rewards
+    // Priority: 1) locked_token_price_sol (from backfill), 2) calculate from entry fee, 3) fallback to 0
+    let tokenPriceSol = positionData.locked_token_price_sol || 0;
+    let priceSource = "locked_token_price_sol";
     
-    if (entryFeeSOL <= 0) {
-      console.log(`⚠️  No entry fee data found - cannot calculate stake SOL value`);
-      return 0;
+    // If no locked price, try to calculate from entry fee
+    if (tokenPriceSol <= 0) {
+      const entryFeeSOL = positionData.total_entry_fees_sol || 0;
+      const ENTRY_FEE_RATE = 0.05; // 5% entry fee
+      
+      if (entryFeeSOL > 0) {
+        const stakeValueSOL = entryFeeSOL / ENTRY_FEE_RATE;
+        tokenPriceSol = stakeValueSOL / principalAmountMKIN;
+        priceSource = "entry_fee_calculation";
+      }
     }
     
-    // Calculate the SOL value of the full stake
-    const stakeValueSOL = entryFeeSOL / ENTRY_FEE_RATE;
-    
-    // Calculate token price at stake time
-    const tokenPriceSol = stakeValueSOL / principalAmountMKIN;
+    // If still no price, we can't calculate rewards
+    if (tokenPriceSol <= 0) {
+      console.log(`⚠️  No locked token price or entry fee data found - cannot calculate rewards`);
+      return 0;
+    }
     
     // Annual return rate (30% APY)
     const ANNUAL_RATE = 0.30;
@@ -1727,11 +1705,9 @@ class StakingService {
     const totalClaimedSol = positionData.total_claimed_sol || 0;
     const pendingRewards = Math.max(0, totalRewards - totalClaimedSol);
     
-    console.log(`📊 Reward Calculation (matches frontend formula):`);
+    console.log(`📊 Reward Calculation (using locked price for stability):`);
     console.log(`   Principal: ${principalAmountMKIN.toLocaleString()} MKIN`);
-    console.log(`   Entry fee paid: ${entryFeeSOL.toFixed(6)} SOL (5% of stake value)`);
-    console.log(`   Stake value in SOL: ${stakeValueSOL.toFixed(6)} SOL`);
-    console.log(`   Token price at stake: ${tokenPriceSol.toFixed(10)} SOL/MKIN`);
+    console.log(`   Token price (${priceSource}): ${tokenPriceSol.toFixed(10)} SOL/MKIN`);
     console.log(`   Seconds staked: ${secondsStaked.toLocaleString()} (${(secondsStaked / 86400).toFixed(2)} days)`);
     console.log(`   Annual rate: ${(ANNUAL_RATE * 100)}% ROI`);
     console.log(`   Base rewards: ${baseRewards.toFixed(9)} SOL`);
