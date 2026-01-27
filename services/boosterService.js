@@ -44,7 +44,12 @@ class BoosterService {
           "HchoYoGU9ZnVffHaEo1Aw9xitvqyhiP575GpebiSXNK4",
           "5MbExwqPUNL8yNuUb8JK9iCXHGGcLXEDkecgZDfSEJfu",
           // Random 1/1 booster added 2026-01-14
-          "77MaUVBGU6ZbCexq6M5GFNDszgpjyMn1bACisKo4X1qR"
+          "77MaUVBGU6ZbCexq6M5GFNDszgpjyMn1bACisKo4X1qR",
+          // Random 1/1 boosters added 2026-01-27
+          "JBWVVUGkJYA3uzXhRdmTuMiP8YFP2APZP7KFtnT6jpvh",
+          "4j7RifoUKrnHFK6TJY7nctJBcozjjFYc8BebS5MNiNZY",
+          "488u23w7YAA5uowkx72kqEiwcj6sgwWGhpMDrCvBPjgX",
+          "8qaYjyY7qwUMeJjz8zPzncmxUozQ2mr2har2ZkhTWbU"
         ]
       },
       CUSTOM_1_1: {
@@ -89,16 +94,18 @@ class BoosterService {
           "7pKZgMEVo1jnndSUCcDpY2Hpa3SapveooAmMPL2HCTWV",
           "BGtMZEb36SLHB3WceU61AwfdXbxy7k6vqXciWtvxSJsQ",
           // Solana Miner boosters added 2026-01-13
-          "HmUpTxhKjYcPCwyCF65FyCRCyKP2WzUkrCrGFVDtT8YW",
+          "HmUpTxhKjYcPCwyCF65FyCRCyKP2WzUkrCvBPjgX",
           "A4mDu4sFNmjGDadPHpbFC2GNeyH6xF9NuejiPFnX7AMZ",
           // Solana Miner boosters added 2026-01-14
           "2eXCtf44NAudG7z8S2zDAgXmLHMcr2oj1vCvc537mHq3",
           "2MeksUy4XJ5aqT9ARrq773ugdnvsAmGTF8XdkzFoXDV6",
           // Solana Miner boosters added 2026-01-15
           "3K8y4VdZJfrwDuWRYXkKNsX3JrBiTpPyGKibhncvxUfU",
-          "99egWJLHeRx6j2VNoAbpHs2XhTJmKWJBz2rVMeZqwRZ3"
+          "99egWJLHeRx6j2VNoAbpHs2XhTJmKWJBz2rVMeZqwRZ3",
+          // Solana Miner booster added 2026-01-27
+          "5K3LoBcsEgLpVCBDmbRsHQopPapt1KDfxHpspBdH6Fms"
         ]
-      }
+      },
     };
 
     // Cache for booster detection results (30 minutes - optimized for Helius credits)
