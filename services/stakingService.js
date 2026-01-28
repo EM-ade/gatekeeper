@@ -905,11 +905,8 @@ class StakingService {
 
     // 6. Send SOL to User (Using Treasury Private Key)
     // NOTE: This must be done AFTER the DB transaction commits to avoid sending funds if DB fails.
-    // However, if this fails, user loses their claim record state?
-    // Ideally: We mark as "Processing" in DB, send SOL, then mark "Complete".
-    // For MVP: We do it optimistically. If send fails, we should ideally revert or alert.
+    // If this fails, we log to a failed_payouts collection for manual recovery.
 
-    // We will initiate the transfer here.
     let payoutSignature = null;
     try {
       payoutSignature = await this._sendSolFromTreasury(
@@ -917,11 +914,64 @@ class StakingService {
         rewardAmount
       );
       console.log(`✅ Claim payout successful! Signature: ${payoutSignature}`);
+      
+      // Update the transaction record with payout signature
+      const txSnapshot = await this.db.collection(TRANSACTIONS_COLLECTION)
+        .where('user_id', '==', firebaseUid)
+        .where('type', '==', 'CLAIM')
+        .where('fee_tx', '==', txSignature)
+        .orderBy('timestamp', 'desc')
+        .limit(1)
+        .get();
+      
+      if (!txSnapshot.empty) {
+        await txSnapshot.docs[0].ref.update({
+          payout_signature: payoutSignature,
+          status: 'COMPLETED'
+        });
+      }
     } catch (e) {
-      console.error("Failed to payout SOL:", e);
-      // Critical Error: User state says claimed, but money not sent.
-      // Need manual intervention or a "Failed Payout" log.
-      throw new StakingError("Payout failed. Please contact support.");
+      console.error(`${logPrefix} ❌ CRITICAL: Payout failed but DB already updated!`);
+      console.error(`${logPrefix}    Error: ${e.message}`);
+      console.error(`${logPrefix}    Stack: ${e.stack}`);
+      
+      // Log failed payout for manual recovery
+      try {
+        await this.db.collection('failed_payouts').add({
+          user_id: firebaseUid,
+          type: 'CLAIM',
+          amount_sol: rewardAmount,
+          fee_tx: txSignature,
+          fee_amount_sol: feeAmount,
+          fee_amount_usd: usdAmount,
+          error_message: e.message,
+          error_stack: e.stack,
+          timestamp: admin.firestore.Timestamp.now(),
+          status: 'PENDING_RECOVERY',
+          recovery_attempts: 0
+        });
+        console.log(`${logPrefix} 📝 Logged to failed_payouts collection for manual recovery`);
+      } catch (logError) {
+        console.error(`${logPrefix} ❌ Failed to log to failed_payouts:`, logError);
+      }
+      
+      // Send Discord alert about failed payout
+      try {
+        const { sendDiscordAlert } = await import("../utils/discordAlerts.js");
+        await sendDiscordAlert({
+          type: 'error',
+          title: '🚨 CRITICAL: Claim Payout Failed',
+          userId: firebaseUid,
+          amount: `${rewardAmount.toFixed(6)} SOL`,
+          feeTx: txSignature,
+          error: e.message,
+          message: `User paid fee but payout failed. REQUIRES MANUAL RECOVERY!\n\nRun: \`node scripts/tmp_rovodev_recover-failed-claim.js ${firebaseUid} --execute\``
+        });
+      } catch (alertError) {
+        console.error(`${logPrefix} ⚠️  Failed to send Discord alert:`, alertError.message);
+      }
+      
+      throw new StakingError("Payout failed. Please contact support. Your claim will be manually processed.");
     }
 
       console.log(`${logPrefix} 🎉 Claim operation completed successfully for user ${firebaseUid}`);
@@ -1237,9 +1287,65 @@ class StakingService {
       console.log(
         `✅ Unstake token transfer successful! Signature: ${tokenSignature}`
       );
+      
+      // Update the transaction record with token signature
+      const txSnapshot = await this.db.collection(TRANSACTIONS_COLLECTION)
+        .where('user_id', '==', firebaseUid)
+        .where('type', '==', 'UNSTAKE')
+        .where('fee_tx', '==', txSignature)
+        .orderBy('timestamp', 'desc')
+        .limit(1)
+        .get();
+      
+      if (!txSnapshot.empty) {
+        await txSnapshot.docs[0].ref.update({
+          token_tx: tokenSignature,
+          status: 'COMPLETED'
+        });
+      }
     } catch (e) {
-      console.error("Failed to send tokens from vault:", e);
-      throw new StakingError("Token transfer failed. Please contact support.");
+      console.error(`${logPrefix} ❌ CRITICAL: Token transfer failed but DB already updated!`);
+      console.error(`${logPrefix}    Error: ${e.message}`);
+      console.error(`${logPrefix}    Stack: ${e.stack}`);
+      
+      // Log failed payout for manual recovery
+      try {
+        await this.db.collection('failed_payouts').add({
+          user_id: firebaseUid,
+          type: 'UNSTAKE',
+          amount_mkin: amount,
+          fee_tx: txSignature,
+          fee_amount_sol: feeAmount,
+          fee_amount_usd: usdAmount,
+          user_wallet: userWallet,
+          error_message: e.message,
+          error_stack: e.stack,
+          timestamp: admin.firestore.Timestamp.now(),
+          status: 'PENDING_RECOVERY',
+          recovery_attempts: 0
+        });
+        console.log(`${logPrefix} 📝 Logged to failed_payouts collection for manual recovery`);
+      } catch (logError) {
+        console.error(`${logPrefix} ❌ Failed to log to failed_payouts:`, logError);
+      }
+      
+      // Send Discord alert about failed payout
+      try {
+        const { sendDiscordAlert } = await import("../utils/discordAlerts.js");
+        await sendDiscordAlert({
+          type: 'error',
+          title: '🚨 CRITICAL: Unstake Token Transfer Failed',
+          userId: firebaseUid,
+          amount: `${amount.toLocaleString()} MKIN`,
+          feeTx: txSignature,
+          error: e.message,
+          message: `User paid fee but token transfer failed. REQUIRES MANUAL RECOVERY!\n\nRun: \`node scripts/recover-failed-unstake.js ${firebaseUid} --execute\``
+        });
+      } catch (alertError) {
+        console.error(`${logPrefix} ⚠️  Failed to send Discord alert:`, alertError.message);
+      }
+      
+      throw new StakingError("Token transfer failed. Please contact support. Your unstake will be manually processed.");
     }
 
     console.log(`🎉 Unstake operation completed successfully for user ${firebaseUid}`);
