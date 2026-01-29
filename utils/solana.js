@@ -2,6 +2,7 @@
 import fetch from 'node-fetch';
 import { COLLECTIONS } from '../config/collections.js';
 import RATE_LIMITING_CONFIG from '../config/rateLimiting.js';
+import magicEdenRateLimiter from './magicEdenRateLimiter.js';
 
 // Environment Variables
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY;
@@ -142,7 +143,12 @@ const getAllNftsFromMagicEden = async (walletAddress) => {
 
     try {
         console.log(`Magic Eden: Attempting to fetch for wallet: ${walletAddress}`);
-        const response = await fetch(url, options);
+        
+        // Apply rate limiting before making the request
+        const response = await magicEdenRateLimiter.execute(async () => {
+            return await fetch(url, options);
+        });
+        
         if (!response.ok) {
             if (response.status === 404) {
                 console.log(`Magic Eden: Wallet ${walletAddress} not found or no tokens.`);
@@ -358,7 +364,11 @@ class MagicEdenRateLimiter {
         };
 
         try {
-            const response = await fetch(url, options);
+            // Apply rate limiting before making the request
+            const response = await magicEdenRateLimiter.execute(async () => {
+                return await fetch(url, options);
+            });
+            
             if (!response.ok) {
                 if (response.status === 429 || response.status === 503) {
                     // Rate limited or service unavailable
@@ -441,7 +451,10 @@ export const getNftsFromCollectionByWallet = async (walletAddress, collectionSym
                 console.log(`Magic Eden: Retry attempt ${attempt}/${maxRetries} for ${collectionSymbol}`);
             }
             
-            const response = await fetch(url, options);
+            // Apply rate limiting before making the request
+            const response = await magicEdenRateLimiter.execute(async () => {
+                return await fetch(url, options);
+            });
             
             if (!response.ok) {
                 if (response.status === 404) {
