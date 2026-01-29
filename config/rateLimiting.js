@@ -7,6 +7,7 @@ export const RATE_LIMITING_CONFIG = {
         delayBetweenRequests: 550, // 550ms = ~109 requests/minute (safe buffer)
         maxRequestsPerSecond: 18, // Stay under 20/second limit
         maxRequestsPerMinute: 110, // Stay under 120/minute limit
+        batchSize: 5, // Process 5 NFT metadata requests per batch
         retryDelay: 2000, // Wait 2 seconds on rate limit (429)
         cacheTTL: 5 * 60 * 1000, // Cache NFT metadata for 5 minutes
     },
