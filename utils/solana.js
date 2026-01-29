@@ -400,9 +400,6 @@ class MagicEdenRateLimiter {
     }
 }
 
-// Create a singleton instance
-const magicEdenRateLimiter = new MagicEdenRateLimiter();
-
 /**
  * Fetches NFT metadata from Magic Eden including attributes
  * @param {string} mintAddress - The NFT mint address
