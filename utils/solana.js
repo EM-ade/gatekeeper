@@ -400,13 +400,16 @@ class MagicEdenRateLimiter {
     }
 }
 
+// Create singleton instance of the MagicEdenRateLimiter class for metadata fetching
+const magicEdenCache = new MagicEdenRateLimiter();
+
 /**
  * Fetches NFT metadata from Magic Eden including attributes
  * @param {string} mintAddress - The NFT mint address
  * @returns {Promise<Object>} NFT metadata with attributes
  */
 export const getNftMetadataFromMagicEden = async (mintAddress) => {
-    return await magicEdenRateLimiter.getNftMetadata(mintAddress);
+    return await magicEdenCache.getNftMetadata(mintAddress);
 };
 
 /**
