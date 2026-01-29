@@ -12,6 +12,7 @@ import sql from '../db.js';
 import NFTVerificationService from './nftVerification.js';
 import { heliusRateLimiter } from '../utils/rateLimiter.js';
 import rateLimitingConfig from '../config/rateLimiting.js';
+import magicEdenRateLimiter from '../utils/magicEdenRateLimiter.js';
 
 const { BATCH_SIZE, DELAY_BETWEEN_BATCHES, DELAY_BETWEEN_USERS, MAX_USERS_PER_RUN } = 
   rateLimitingConfig.verification;
@@ -83,6 +84,10 @@ class ImprovedPeriodicVerificationService {
       }
 
       console.log(`[periodic-verification] Selected ${users.length} users to verify`);
+      
+      // Log initial rate limiter status
+      const initialStatus = magicEdenRateLimiter.getStatus();
+      console.log(`[periodic-verification] Starting with ${initialStatus.requestsInLastMinute} Magic Eden requests in last minute`);
 
       // Step 3: Process users in batches
       let checked = 0;
@@ -125,6 +130,11 @@ class ImprovedPeriodicVerificationService {
       }
 
       const duration = Math.floor((Date.now() - startTime) / 1000);
+      
+      // Log Magic Eden rate limiter status
+      const rateLimitStatus = magicEdenRateLimiter.getStatus();
+      console.log(`[periodic-verification] Magic Eden API: ${rateLimitStatus.requestsInLastMinute}/${rateLimitStatus.maxPerMinute} requests in last minute`);
+      
       console.log(`[periodic-verification] Completed: ${checked} checked, ${rolesAdded} roles added, ${rolesRemoved} roles removed, ${errors} errors (${duration}s)`);
 
     } catch (error) {
