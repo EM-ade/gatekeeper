@@ -319,8 +319,11 @@ class MagicEdenRateLimiter {
         if (this.processing) return;
         this.processing = true;
 
+        console.log(`[MagicEdenCache] Starting queue processing, ${this.queue.length} items in queue`);
+
         while (this.queue.length > 0) {
             const batch = this.queue.splice(0, this.batchSize);
+            console.log(`[MagicEdenCache] Processing batch of ${batch.length} items, ${this.queue.length} remaining`);
             
             try {
                 // Process batch concurrently with rate limiting
@@ -345,13 +348,17 @@ class MagicEdenRateLimiter {
                 });
 
                 // Rate limiting delay
-                await new Promise(resolve => setTimeout(resolve, 1000 / this.maxRequestsPerSecond));
+                const delay = 1000 / this.maxRequestsPerSecond;
+                console.log(`[MagicEdenCache] Batch complete, waiting ${delay}ms before next batch`);
+                await new Promise(resolve => setTimeout(resolve, delay));
             } catch (error) {
+                console.error(`[MagicEdenCache] Batch processing error:`, error.message);
                 // If batch fails, reject all items
                 batch.forEach(item => item.reject(error));
             }
         }
 
+        console.log(`[MagicEdenCache] Queue processing complete`);
         this.processing = false;
     }
 
@@ -576,7 +583,9 @@ export const checkNftOwnershipWithClass = async (walletAddress, collectionConfig
         
         if (heliusRawNfts && heliusRawNfts.length > 0) {
             // Convert Helius format to our format and filter out duplicates
-            const heliusConverted = await Promise.all(heliusRawNfts.map(async (nft) => {
+            console.log(`Helius: Processing ${heliusRawNfts.length} NFTs for metadata enrichment...`);
+            
+            const heliusConverted = await Promise.all(heliusRawNfts.map(async (nft, index) => {
                 const mintLower = nft.value?.toLowerCase();
                 
                 // Skip if already found on Magic Eden
@@ -585,14 +594,35 @@ export const checkNftOwnershipWithClass = async (walletAddress, collectionConfig
                     return null;
                 }
                 
-                const metadata = await getNftMetadataFromMagicEden(nft.value);
-                const classAttr = extractClassFromMetadata(metadata, collectionConfig.classAttributeName);
-                return {
-                    mintAddress: nft.value,
-                    name: nft.label,
-                    class: classAttr,
-                    source: 'helius',
-                };
+                console.log(`Helius: Fetching metadata for NFT ${index + 1}/${heliusRawNfts.length} (${nft.value.substring(0, 8)}...)`);
+                
+                try {
+                    // Add timeout protection (30 seconds per NFT)
+                    const metadataPromise = getNftMetadataFromMagicEden(nft.value);
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Metadata fetch timeout')), 30000)
+                    );
+                    
+                    const metadata = await Promise.race([metadataPromise, timeoutPromise]);
+                    const classAttr = extractClassFromMetadata(metadata, collectionConfig.classAttributeName);
+                    
+                    console.log(`Helius: Got metadata for ${nft.label}, class: ${classAttr || 'none'}`);
+                    
+                    return {
+                        mintAddress: nft.value,
+                        name: nft.label,
+                        class: classAttr,
+                        source: 'helius',
+                    };
+                } catch (error) {
+                    console.warn(`Helius: Failed to get metadata for ${nft.value}: ${error.message}, continuing without class info`);
+                    return {
+                        mintAddress: nft.value,
+                        name: nft.label,
+                        class: null,
+                        source: 'helius',
+                    };
+                }
             }));
             
             // Filter out nulls and add to helius array
