@@ -37,6 +37,8 @@ import PeriodicVerificationService from "./services/periodicVerification.js";
 import { PublicKey } from "@solana/web3.js";
 import { heliusRateLimiter } from "./utils/rateLimiter.js";
 import withdrawalLogger from "./services/withdrawalLogger.js";
+import express from "express";
+import cors from "cors";
 
 // Check for essential environment variables
 if (!process.env.DISCORD_BOT_TOKEN) {
@@ -326,9 +328,40 @@ if (!admin.apps.length) {
   }
 }
 
-// Discord Bot Service - No HTTP API
-// All REST endpoints moved to backend-api service
+// Discord Bot Service with HTTP API for wallet management
 console.log("🤖 [BOT] Discord Bot Service starting...");
+
+// Create Express app for wallet management APIs
+const app = express();
+app.use(express.json());
+
+// CORS configuration
+const allowedOriginsEnv = process.env.ALLOWED_ORIGIN || "*";
+const allowedOrigins = allowedOriginsEnv === "*" 
+  ? "*" 
+  : allowedOriginsEnv.split(",").map(origin => origin.trim()).filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins === "*") return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+}));
+
+// Health check
+app.get("/health", (_req, res) => {
+  res.json({ 
+    ok: true, 
+    service: "gatekeeper-bot",
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Middleware: verify Firebase ID token from Authorization: Bearer <token>
 async function verifyFirebase(req, res, next) {
@@ -362,12 +395,10 @@ async function ensureUserForFirebaseUid(firebaseUid) {
 }
 
 // ============================================================================
-// EXPRESS API ENDPOINTS - MOVED TO BACKEND-API SERVICE
-// All HTTP endpoints below have been moved to backend-api/server.js
-// These are kept as comments for reference only
+// EXPRESS API ENDPOINTS - Wallet Management & Discord Integration
+// These endpoints handle user balances, transfers, withdrawals, and Discord linking
 // ============================================================================
 
-/*
 // GET current balance for authenticated Firebase user
 app.get("/api/balance", verifyFirebase, async (req, res) => {
   try {
@@ -2161,11 +2192,8 @@ app.post("/api/verification/auto", verifyFirebase, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-*/
 
-// ============================================================================
-// END OF MOVED EXPRESS API ENDPOINTS
-// ============================================================================
+// END OF EXPRESS API ENDPOINTS
 
 // ============================================================================
 // The backend-api service handles all HTTP endpoints
@@ -2236,3 +2264,25 @@ async function setupAutomaticBoosterRefresh_MOVED_TO_API() {
 // REMOVED: Force-claim functionality has been moved to backend-api/server.js
 // The backend API service handles all scheduled force-claims
 // ============================================================================
+
+// ============================================================================
+// START HTTP SERVER
+// ============================================================================
+const PORT = process.env.PORT || 3000;
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 [BOT] HTTP server listening on port ${PORT}`);
+  console.log(`📡 [BOT] Health check: http://localhost:${PORT}/health`);
+  console.log(`🤖 [BOT] Discord bot and API server running`);
+});
+
+// Handle server errors
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`❌ [BOT] Port ${PORT} is already in use`);
+  } else {
+    console.error(`❌ [BOT] Server error:`, error);
+  }
+  process.exit(1);
+});
+
+console.log("✅ [BOT] Discord bot service initialized successfully");
