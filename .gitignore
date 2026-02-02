@@ -19,6 +19,6 @@ firebase-admin-*.json
 logs
 serviceAccount*.json
 firebase-service-account.json
-backend-api
+
 *.pem
 *.key
