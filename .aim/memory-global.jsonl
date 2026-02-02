@@ -1,0 +1,6 @@
+{"type":"_aim","source":"mcp-knowledge-graph"}
+{"type":"relation","from":"Gatekeeper Backend API Deployment - January 2026","to":"Critical Fixes Applied","relationType":"includes"}
+{"type":"relation","from":"Gatekeeper Backend API Deployment - January 2026","to":"Deployment Configuration","relationType":"uses"}
+{"type":"relation","from":"Gatekeeper Backend API Deployment - January 2026","to":"Files Pending Deployment","relationType":"requires"}
+{"type":"relation","from":"Critical Fixes Applied","to":"Security Implementation","relationType":"ensures"}
+{"type":"relation","from":"Deployment Configuration","to":"Operational Status","relationType":"enables"}

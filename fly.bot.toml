@@ -1,0 +1,25 @@
+# fly.toml app configuration file for Discord Bot Service
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'gatekeeper-discord-bot'
+primary_region = 'cdg'
+
+[build]
+  dockerfile = "Dockerfile.bot"
+
+[env]
+  NODE_ENV = "production"
+  SERVICE_TYPE = "bot"
+
+# No HTTP service - Discord bot only uses Discord Gateway
+# No ports exposed since bot doesn't serve HTTP requests
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+
+[deploy]
+  strategy = "immediate"
