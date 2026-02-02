@@ -166,4 +166,41 @@ router.get("/history", verifyAuth, async (req, res) => {
   }
 });
 
+// Manual Booster Refresh Endpoint
+router.post("/refresh", verifyAuth, async (req, res) => {
+  try {
+    const firebaseUid = req.user.uid;
+    
+    console.log(`[boosters:refresh] Manual refresh requested by user ${firebaseUid}`);
+    
+    const boosterService = new BoosterService();
+    
+    // Force refresh boosters for this user
+    const result = await boosterService.refreshUserBoosters(firebaseUid);
+    
+    if (result && result.length >= 0) {
+      console.log(`[boosters:refresh] ✅ Refreshed boosters for ${firebaseUid}: ${result.length} booster(s)`);
+      
+      return res.json({
+        success: true,
+        boosters: result,
+        message: `Found ${result.length} active booster(s)`
+      });
+    } else {
+      console.log(`[boosters:refresh] ⚠️  No boosters found for ${firebaseUid}`);
+      return res.json({
+        success: true,
+        boosters: [],
+        message: 'No boosters detected'
+      });
+    }
+  } catch (error) {
+    console.error(`[boosters:refresh] Error:`, error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to refresh boosters'
+    });
+  }
+});
+
 export default router;

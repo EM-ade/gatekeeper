@@ -565,6 +565,13 @@ class StakingService {
           console.log(`${logPrefix}   ⏰ First stake - setting stake_start_time`);
         }
         posData.last_stake_time = now;
+        
+        // Initialize last_claim_time checkpoint for new stakers
+        // This is used to calculate rewards from last claim, not from stake start
+        if (!posData.last_claim_time) {
+          posData.last_claim_time = now;
+          console.log(`${logPrefix}   📍 Initializing last_claim_time checkpoint (rewards start now)`);
+        }
 
         // Store locked token price at stake time for stable display rate
         // This prevents visual fluctuations in mining rate due to token price changes
@@ -862,7 +869,10 @@ class StakingService {
         console.log(`   Using real-time calculated reward: ${rewardAmount.toFixed(9)} SOL`);
         console.log(`   (Database pending_rewards was: ${posData.pending_rewards || 0} SOL - outdated)`);
 
-        // Reset User pending rewards
+        // Set checkpoint: last_claim_time to now (for next reward calculation)
+        posData.last_claim_time = now;
+        
+        // Reset User pending rewards (legacy field, kept for compatibility)
         const previousPending = posData.pending_rewards || 0;
         posData.pending_rewards = 0;
         posData.total_claimed_sol =
@@ -871,6 +881,7 @@ class StakingService {
           (posData.total_accrued_sol || 0) + rewardAmount;
 
         console.log(`   Claiming ${rewardAmount.toFixed(9)} SOL (was ${previousPending.toFixed(9)} pending)`);
+        console.log(`   Set last_claim_time checkpoint to: ${new Date(now.toMillis()).toISOString()}`);
 
         // Writes - all writes happen atomically
         console.log(`   Writing pool data...`);
@@ -1760,16 +1771,22 @@ class StakingService {
       return 0;
     }
     
-    // Get stake start time (in seconds)
+    // Use checkpoint system: calculate rewards from last claim time
+    // This prevents rewards from resetting to zero after claiming
     const stakeStartTime = positionData.stake_start_time?._seconds || 
                            positionData.stake_start_time?.seconds || 
                            Math.floor(Date.now() / 1000);
     
-    // Calculate time staked (in seconds)
-    const currentTime = Math.floor(Date.now() / 1000);
-    const secondsStaked = currentTime - stakeStartTime;
+    // Use last_claim_time as checkpoint (falls back to stake_start_time for first claim)
+    const lastClaimTime = positionData.last_claim_time?._seconds || 
+                          positionData.last_claim_time?.seconds || 
+                          stakeStartTime;
     
-    if (secondsStaked <= 0) {
+    // Calculate time since last claim (in seconds)
+    const currentTime = Math.floor(Date.now() / 1000);
+    const secondsSinceLastClaim = currentTime - lastClaimTime;
+    
+    if (secondsSinceLastClaim <= 0) {
       return 0;
     }
     
@@ -1800,27 +1817,22 @@ class StakingService {
     const ANNUAL_RATE = 0.30;
     const SECONDS_PER_YEAR = 365 * 24 * 60 * 60; // 31,536,000 (match frontend exactly)
     
-    // Calculate base rewards (matches frontend formula exactly):
-    // baseRewards = (stakedAmount * 0.3 * tokenPriceSol * durationSeconds) / SECONDS_IN_YEAR
-    const baseRewards = (principalAmountMKIN * ANNUAL_RATE * tokenPriceSol * secondsStaked) / SECONDS_PER_YEAR;
+    // Calculate rewards since last claim (checkpoint-based):
+    // No need to subtract total_claimed_sol since we're only calculating from last checkpoint
+    const baseRewards = (principalAmountMKIN * ANNUAL_RATE * tokenPriceSol * secondsSinceLastClaim) / SECONDS_PER_YEAR;
     
     // Apply booster multiplier
-    const totalRewards = baseRewards * boosterMultiplier;
+    const pendingRewards = baseRewards * boosterMultiplier;
     
-    // Subtract already claimed rewards
-    const totalClaimedSol = positionData.total_claimed_sol || 0;
-    const pendingRewards = Math.max(0, totalRewards - totalClaimedSol);
-    
-    console.log(`📊 Reward Calculation (using locked price for stability):`);
+    console.log(`📊 Reward Calculation (checkpoint-based, using locked price):`);
     console.log(`   Principal: ${principalAmountMKIN.toLocaleString()} MKIN`);
     console.log(`   Token price (${priceSource}): ${tokenPriceSol.toFixed(10)} SOL/MKIN`);
-    console.log(`   Seconds staked: ${secondsStaked.toLocaleString()} (${(secondsStaked / 86400).toFixed(2)} days)`);
+    console.log(`   Last claim time: ${new Date(lastClaimTime * 1000).toISOString()}`);
+    console.log(`   Seconds since last claim: ${secondsSinceLastClaim.toLocaleString()} (${(secondsSinceLastClaim / 86400).toFixed(2)} days)`);
     console.log(`   Annual rate: ${(ANNUAL_RATE * 100)}% ROI`);
     console.log(`   Base rewards: ${baseRewards.toFixed(9)} SOL`);
     console.log(`   Booster: ${boosterMultiplier}x`);
-    console.log(`   Total rewards: ${totalRewards.toFixed(9)} SOL`);
-    console.log(`   Already claimed: ${totalClaimedSol.toFixed(9)} SOL`);
-    console.log(`   Pending: ${pendingRewards.toFixed(9)} SOL`);
+    console.log(`   Pending (since last claim): ${pendingRewards.toFixed(9)} SOL`);
     
     return pendingRewards;
   }

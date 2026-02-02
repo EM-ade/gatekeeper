@@ -1,13 +1,13 @@
 {
-  "name": "node-express-api",
-  "description": "Simple api sample in Node",
+  "name": "gatekeeper-discord-bot",
+  "description": "Discord Bot Service for Gatekeeper - Handles verification, commands, and events",
   "version": "1.0.0",
   "private": true,
-  "main": "index.js",
+  "main": "bot.js",
   "type": "module",
   "scripts": {
-    "dev": "cross-env NODE_ENV=development node index.js",
-    "start": "node index.js",
+    "dev": "cross-env NODE_ENV=development node bot.js",
+    "start": "node bot.js",
     "migrate-wallets": "node migrate_wallet_addresses.js",
     "fix-wallets": "node advanced_wallet_fix.js",
     "fix-wallets-web3": "node web3_context_wallet_fix.js",

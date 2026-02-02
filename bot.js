@@ -25,10 +25,8 @@ import commandHandler from "./handlers/command.js";
 import eventHandler from "./handlers/event.js";
 import { REST } from "@discordjs/rest";
 import { Routes } from "discord-api-types/v10";
-import express from "express";
 import admin from "firebase-admin";
 import sql from "./db.js";
-import cors from "cors";
 import fs from "fs";
 import {
   verificationSessionService,
@@ -328,66 +326,9 @@ if (!admin.apps.length) {
   }
 }
 
-// Minimal Express API for frontend without Cloud Functions
-const app = express();
-app.use(express.json());
-
-// CORS - Support multiple origins (comma-separated in env var)
-const allowedOriginsEnv = process.env.ALLOWED_ORIGIN || "*";
-const allowedOrigins =
-  allowedOriginsEnv === "*"
-    ? "*"
-    : allowedOriginsEnv
-        .split(",")
-        .map((origin) => origin.trim())
-        .filter(Boolean);
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-
-      // Allow all origins if configured with '*'
-      if (allowedOrigins === "*") return callback(null, true);
-
-      // Check if origin is in the allowed list
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true,
-  })
-);
-
-// Import Staking Routes
-import stakingRoutes from "./routes/staking.js";
-app.use("/api/staking", stakingRoutes);
-
-// Import Goal Routes
-import goalRoutes from "./routes/goal.js";
-app.use("/api/goal", goalRoutes);
-
-// Import Leaderboard Routes
-import leaderboardRoutes from "./routes/leaderboard.js";
-app.use("/api/leaderboard", leaderboardRoutes);
-
-// Import Booster Routes
-import boosterRoutes from "./routes/boosters.js";
-app.use("/api/boosters", boosterRoutes);
-
-// Import One-Time Distribution Routes
-import distributionRoutes from "./routes/one-time-distribution.js";
-app.use("/api/distribution", distributionRoutes);
-
-// Import Force-Claim Routes
-import forceClaimRoutes from "./routes/force-claim.js";
-app.use("/api/force-claim", forceClaimRoutes);
-
-// Health check
-app.get("/health", (_req, res) => res.json({ ok: true }));
+// Discord Bot Service - No HTTP API
+// All REST endpoints moved to backend-api service
+console.log("🤖 [BOT] Discord Bot Service starting...");
 
 // Middleware: verify Firebase ID token from Authorization: Bearer <token>
 async function verifyFirebase(req, res, next) {
@@ -420,6 +361,13 @@ async function ensureUserForFirebaseUid(firebaseUid) {
   return rows[0]?.user_id;
 }
 
+// ============================================================================
+// EXPRESS API ENDPOINTS - MOVED TO BACKEND-API SERVICE
+// All HTTP endpoints below have been moved to backend-api/server.js
+// These are kept as comments for reference only
+// ============================================================================
+
+/*
 // GET current balance for authenticated Firebase user
 app.get("/api/balance", verifyFirebase, async (req, res) => {
   try {
@@ -540,7 +488,7 @@ app.post("/api/ledger", verifyFirebase, async (req, res) => {
         const balance = balRows[0]?.balance ?? 0n;
         return res.json({ balance: Number(balance) });
       } catch (_) {
-        /* ignore */
+        // ignore
       }
     }
     console.error("POST /api/ledger error:", err);
@@ -2213,26 +2161,27 @@ app.post("/api/verification/auto", verifyFirebase, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+*/
 
-// Start HTTP server using environment configuration
-const apiConfig = environmentConfig.apiConfig;
-const PORT = apiConfig.port;
-const HOST = apiConfig.host;
+// ============================================================================
+// END OF MOVED EXPRESS API ENDPOINTS
+// ============================================================================
 
-app.listen(PORT, HOST, () => {
-  console.log(`🚀 HTTP API listening on ${HOST}:${PORT}`);
-  console.log(`📊 Environment: ${envInfo.nodeEnv}`);
-  console.log(`🔧 Feature flags:`, environmentConfig.featureFlags);
-  
-  // Initialize automatic booster refresh
-  setupAutomaticBoosterRefresh();
-});
+// ============================================================================
+// The backend-api service handles all HTTP endpoints
+console.log(`✅ [BOT] Discord bot is ready!`);
+console.log(`📊 [BOT] Environment: ${envInfo.nodeEnv}`);
+console.log(`🔧 [BOT] Feature flags:`, environmentConfig.featureFlags);
+
+// Note: Automatic booster refresh moved to backend-api service
+// Note: Weekly force-claim moved to backend-api service
 
 /**
  * Set up automatic periodic booster refresh
- * Runs every 1 hour to keep all active stakers' boosters up-to-date
+ * MOVED TO BACKEND-API SERVICE
+ * This function is no longer used in the bot service
  */
-async function setupAutomaticBoosterRefresh() {
+async function setupAutomaticBoosterRefresh_MOVED_TO_API() {
   const REFRESH_INTERVAL = 60 * 60 * 1000; // 1 hour (optimized for Helius credits)
   
   console.log('⚡ Setting up automatic booster refresh...');
@@ -2267,25 +2216,28 @@ async function setupAutomaticBoosterRefresh() {
     }
   }
   
-  // REMOVED: Initial startup refresh to prevent API rate limiting spike
-  // Boosters will be refreshed on the first scheduled run (60 minutes after startup)
-  console.log('⏳ First booster refresh will run in 60 minutes (startup refresh disabled to avoid rate limiting)');
+  // Run first refresh 2 minutes after server starts (give time for everything to initialize)
+  setTimeout(() => {
+    console.log('🚀 Running initial booster refresh (2 minutes after startup)...');
+    runBoosterRefresh();
+  }, 2 * 60 * 1000);
   
   // Set up recurring refresh every hour
   setInterval(runBoosterRefresh, REFRESH_INTERVAL);
   
   console.log('✅ Automatic booster refresh configured');
-  console.log(`   First refresh: ${new Date(Date.now() + REFRESH_INTERVAL).toLocaleTimeString()}`);
+  console.log(`   First refresh: ${new Date(Date.now() + 2 * 60 * 1000).toLocaleTimeString()}`);
   console.log(`   Then every 60 minutes`);
 }
 
 // ============================================================================
-// WEEKLY FORCE-CLAIM SCHEDULER
-// Automatically claims pending rewards for all users every Sunday
+// WEEKLY FORCE-CLAIM SCHEDULER - MOVED TO BACKEND-API SERVICE
 // ============================================================================
+// This function has been moved to backend-api/server.js
+// The API service handles scheduled force-claims
 import forceClaimService from "./services/forceClaimService.js";
 
-function setupWeeklyForceClaim() {
+function setupWeeklyForceClaim_MOVED_TO_API() {
   const FORCE_CLAIM_HOUR = 12; // Run at 12:00 PM UTC (noon)
   const FORCE_CLAIM_DAY = 0;   // Sunday (0 = Sunday, 1 = Monday, etc.)
   const CHECK_INTERVAL = 60 * 60 * 1000; // Check every hour
@@ -2392,4 +2344,5 @@ function setupWeeklyForceClaim() {
 }
 
 // Initialize the weekly force-claim scheduler
-setupWeeklyForceClaim();
+// MOVED TO BACKEND-API SERVICE - Do not call here
+// setupWeeklyForceClaim();

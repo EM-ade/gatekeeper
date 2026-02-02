@@ -438,6 +438,11 @@ class BoosterService {
   /**
    * Periodic scanning of all active staking users
    * Call this from a scheduled job
+   * 
+   * Rate-limited implementation:
+   * - Processes users in batches to avoid API rate limits
+   * - Adds delays between batches
+   * - Prevents simultaneous API calls to Helius
    */
   async refreshAllActiveBoosters() {
     try {
@@ -449,20 +454,59 @@ class BoosterService {
         .where('principal_amount', '>', 0)
         .get();
       
-      const refreshPromises = [];
+      const totalUsers = positionsSnapshot.size;
+      console.log(`📊 Found ${totalUsers} active stakers to refresh`);
       
-      for (const doc of positionsSnapshot.docs) {
-        const firebaseUid = doc.id;
-        refreshPromises.push(
-          this.refreshUserBoosters(firebaseUid).catch(error => {
-            console.error(`Failed to refresh boosters for ${firebaseUid}:`, error);
-          })
-        );
+      if (totalUsers === 0) {
+        console.log('✅ No active stakers to refresh');
+        return;
       }
       
-      await Promise.all(refreshPromises);
+      // Configuration for rate limiting
+      const BATCH_SIZE = 5; // Process 5 users at a time
+      const DELAY_BETWEEN_BATCHES = 2000; // 2 second delay between batches
+      const DELAY_BETWEEN_USERS = 500; // 500ms delay between users in a batch
       
-      console.log(`✅ Completed booster refresh for ${positionsSnapshot.size} active stakers`);
+      const userIds = positionsSnapshot.docs.map(doc => doc.id);
+      let processedCount = 0;
+      let successCount = 0;
+      let failureCount = 0;
+      
+      // Process in batches
+      for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
+        const batch = userIds.slice(i, i + BATCH_SIZE);
+        const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
+        const totalBatches = Math.ceil(userIds.length / BATCH_SIZE);
+        
+        console.log(`📦 Processing batch ${batchNumber}/${totalBatches} (${batch.length} users)...`);
+        
+        // Process users in batch sequentially with delays
+        for (const firebaseUid of batch) {
+          try {
+            await this.refreshUserBoosters(firebaseUid);
+            successCount++;
+            console.log(`  ✅ [${processedCount + 1}/${totalUsers}] Refreshed boosters for ${firebaseUid}`);
+          } catch (error) {
+            failureCount++;
+            console.error(`  ❌ [${processedCount + 1}/${totalUsers}] Failed to refresh boosters for ${firebaseUid}:`, error.message);
+          }
+          
+          processedCount++;
+          
+          // Add delay between users (except for last user in batch)
+          if (processedCount < totalUsers && batch.indexOf(firebaseUid) < batch.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_USERS));
+          }
+        }
+        
+        // Add delay between batches (except for last batch)
+        if (i + BATCH_SIZE < userIds.length) {
+          console.log(`⏳ Waiting ${DELAY_BETWEEN_BATCHES}ms before next batch...`);
+          await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
+        }
+      }
+      
+      console.log(`✅ Completed booster refresh: ${successCount} success, ${failureCount} failed, ${totalUsers} total`);
     } catch (error) {
       console.error('Error in periodic booster refresh:', error);
     }
