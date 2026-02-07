@@ -970,7 +970,7 @@ app.post("/api/withdraw/initiate", verifyFirebase, async (req, res) => {
       userId,
       walletAddress,
       amount,
-      { feeAmountSol: 0, feeAmountUsd: 0.15, solPrice: 0 }, // Will update later
+      { feeAmountSol: 0, feeAmountUsd: 1.05, solPrice: 0 }, // Will update later
       req.ip,
       req.headers["user-agent"]
     );
@@ -1010,10 +1010,11 @@ app.post("/api/withdraw/initiate", verifyFirebase, async (req, res) => {
     }
 
     // 4. Get SOL price and calculate flat fee
-    // Flat $0.15 fee for all withdrawals
+    // $1.05 total fee for all withdrawals ($0.15 base + $0.90 site fee)
+    // Site fee breakdown: Maintenance $0.25 + Team $0.10 + Treasury $0.55
     const { getSolPriceUSD } = await import("./utils/solPrice.js");
     const solPrice = await getSolPriceUSD();
-    const feeInUsd = 0.15; // Flat fee for all withdrawals
+    const feeInUsd = 1.05; // Total fee: $0.15 + $0.90
     const feeInSol = feeInUsd / solPrice;
 
     console.log(
@@ -1207,7 +1208,7 @@ app.post("/api/withdraw/complete", verifyFirebase, async (req, res) => {
           userId,
           walletAddress,
           amount,
-          { feeAmountSol: 0, feeAmountUsd: 0.15, solPrice: 0 },
+          { feeAmountSol: 0, feeAmountUsd: 1.05, solPrice: 0 },
           null,
           null
         ),
