@@ -109,10 +109,25 @@ async function resolveUserIdByTarget({
 
 // Log in to Discord with your client's token
 console.log(`[BOT] Attempting to login to Discord...`);
-client.login(process.env.DISCORD_BOT_TOKEN).catch((error) => {
-  console.error(`[BOT] ❌ Failed to login to Discord:`, error);
+console.log(`[BOT] Token present: ${!!process.env.DISCORD_BOT_TOKEN}`);
+console.log(`[BOT] Token length: ${process.env.DISCORD_BOT_TOKEN?.length || 0}`);
+
+// Set a timeout for login
+const loginTimeout = setTimeout(() => {
+  console.error(`[BOT] ❌ Login timeout after 30 seconds - Discord connection may be blocked`);
   process.exit(1);
-});
+}, 30000);
+
+client.login(process.env.DISCORD_BOT_TOKEN)
+  .then(() => {
+    clearTimeout(loginTimeout);
+    console.log(`[BOT] ✅ Login promise resolved`);
+  })
+  .catch((error) => {
+    clearTimeout(loginTimeout);
+    console.error(`[BOT] ❌ Failed to login to Discord:`, error);
+    process.exit(1);
+  });
 
 // Load commands and events
 client.once("ready", async () => {
