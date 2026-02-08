@@ -448,8 +448,15 @@ export default {
             try {
                 await command.execute(interaction);
             } catch (error) {
-                console.error(error);
-                await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+                console.error(`[Command Error] ${interaction.commandName}:`, error);
+                
+                // Use editReply if already deferred, otherwise reply
+                const errorMessage = 'There was an error while executing this command!';
+                if (interaction.deferred || interaction.replied) {
+                    await interaction.editReply({ content: errorMessage }).catch(console.error);
+                } else {
+                    await interaction.reply({ content: errorMessage, ephemeral: true }).catch(console.error);
+                }
             }
         }
     } else if (interaction.isButton() && interaction.customId.startsWith('profile_')) {
