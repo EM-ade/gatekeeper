@@ -108,7 +108,11 @@ async function resolveUserIdByTarget({
 // (moved admin backfill route below app initialization)
 
 // Log in to Discord with your client's token
-client.login(process.env.DISCORD_BOT_TOKEN);
+console.log(`[BOT] Attempting to login to Discord...`);
+client.login(process.env.DISCORD_BOT_TOKEN).catch((error) => {
+  console.error(`[BOT] ❌ Failed to login to Discord:`, error);
+  process.exit(1);
+});
 
 // Load commands and events
 client.once("ready", async () => {
